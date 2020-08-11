@@ -15,6 +15,7 @@
     <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to Victoria Makerspace’s documentation!" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -35,45 +36,57 @@
 <h1>PCB Design<a class="headerlink" href="#pcb-design" title="Permalink to this headline">¶</a></h1>
 <p><a class="reference external" href="https://kicad-pcb.org/">Software of choice: kiCAD</a>
 Reasoning: Its free and well supported.</p>
-<div class="section" id="learning-pcb-design">
-<h2>Learning PCB Design<a class="headerlink" href="#learning-pcb-design" title="Permalink to this headline">¶</a></h2>
-<p><a class="reference external" href="https://www.youtube.com/watch?v=vaCVh2SAZY4/i">Digi-Key’s Intro to kiCAD:</a> this series alone taught me kiCAD. A heads up the version you use will likely be different. If an icon isn’t where it appears in the video look in the comments and someone has posted where it got moved to. Also its a 10 video series I recommend 1.75X speed.
-<a class="reference external" href="https://www.youtube.com/watch?v=w_7iRCyau7w">Importing custom graphics into kiCAD</a> - If you want to fancy up your boards.
-<a class="reference external" href="https://www.4pcb.com/trace-width-calculator.html">PCB Trace Width Calculator</a> - To help with determine trace sizes.</p>
-</div>
 <div class="section" id="kicad-project-files">
 <h2>kiCAD Project Files<a class="headerlink" href="#kicad-project-files" title="Permalink to this headline">¶</a></h2>
-<p>Files go here</p>
+<p>kiCAD Project files can be downloaded
+<a class="reference download internal" download="" href="_downloads/e62bbc911c8b8da4618dd524c2327adc/toolAccess.zip"><code class="xref download docutils literal notranslate"><span class="pre">toolAccess.zip</span></code></a></p>
+<p>Download the files above, unzip them into your desired directory, and then open the toolAccess.pro file from kiCAD &gt; File &gt; Open Project.
+The project file includes all of the revisions made by myself (Liam Brinston) during my co-op term in the summer of 2020.</p>
+<p>Insert text talking about different revisions and inheritance from eeSchema</p>
+</div>
+<div class="section" id="learning-pcb-design">
+<h2>Learning PCB Design<a class="headerlink" href="#learning-pcb-design" title="Permalink to this headline">¶</a></h2>
+<p>For those interested in learning to design their own PCBs. These are the resources I utilized during my co-op. They are focused on PCB design and PCB CAD tools not circuit theory.</p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="https://www.youtube.com/watch?v=vaCVh2SAZY4/i">Digi-Key’s Intro to kiCAD:</a> this series alone taught me kiCAD. A heads up the version you use will likely be different. If an icon isn’t where it appears in the video look in the comments and someone has posted where it got moved to. Also its a 10 video series I recommend 1.75X speed.</div>
+<div class="line"><a class="reference external" href="https://www.youtube.com/watch?v=w_7iRCyau7w">Importing custom graphics into kiCAD</a> - If you want to fancy up your boards.</div>
+<div class="line"><a class="reference external" href="https://www.4pcb.com/trace-width-calculator.html">PCB Trace Width Calculator</a> - To help with determine trace sizes.</div>
+</div>
 </div>
 <div class="section" id="ac-creepage-and-clearance-considerations">
 <h2>AC creepage and clearance considerations<a class="headerlink" href="#ac-creepage-and-clearance-considerations" title="Permalink to this headline">¶</a></h2>
 <p>Useful technical documentation:</p>
-<p><a class="reference external" href="https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance">High Voltage PCB Design Creepage and Clearance Distance</a>
-<a class="reference external" href="https://www.4pcb.com/trace-width-calculator.html">Advanced Circuits PCB trace width calculator</a>
-<a class="reference external" href="https://www.smps.us/pcbtracespacing.html">Creepage calculator</a>
-<a class="reference external" href="https://www.autodesk.com/products/eagle/blog/8-pcb-grounding-rules/">Grounding considerations</a>
-<a class="reference external" href="https://db-electronic.com/en/pcb-manufacturing_s56.htm">CTI and PTI</a>
-<a class="reference external" href="https://en.wikipedia.org/wiki/Comparative_Tracking_Index">CTI Wikipedia page</a></p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance">High Voltage PCB Design Creepage and Clearance Distance</a></div>
+<div class="line"><a class="reference external" href="https://www.4pcb.com/trace-width-calculator.html">Advanced Circuits PCB trace width calculator</a></div>
+<div class="line"><a class="reference external" href="https://www.smps.us/pcbtracespacing.html">Creepage calculator</a></div>
+<div class="line"><a class="reference external" href="https://www.autodesk.com/products/eagle/blog/8-pcb-grounding-rules/">Grounding considerations</a></div>
+<div class="line"><a class="reference external" href="https://db-electronic.com/en/pcb-manufacturing_s56.htm">CTI and PTI</a></div>
+<div class="line"><a class="reference external" href="https://en.wikipedia.org/wiki/Comparative_Tracking_Index">CTI Wikipedia page</a></div>
+</div>
 <p>Clearance - is the shortest distance through air between two conductors. Environmental conditions have a significant effect on this, primarily humidity changes.</p>
 <p>Creepage - measures distances between two conductors along the surface of a high voltage PCB.  This requirement varies with the material of your PCB and can be increaed by slotting or routing air gaps between parts.</p>
 <p>Our high voltage components
 Our circuit has a small number of high voltage AC traces. Namely the spade terminals where AC power comes onto the boards, our HiLink Mains to 5V PSU, the protection circuitry for the PSU, and the relay contactor pins. These traces will operate at either 120V or 240V depending on the tool being controlled (the HiLink is capable of stepping down both).</p>
-<p><img alt="d0400a78639494adf883cf8e1f101b76.png" src=":/419b35bbdf2444b29c5b0c16f7a64f89" />
-Source: <a class="reference external" href="https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance">High Voltage PCB Design Creepage and Clearance Distance</a></p>
-<p><u>Determining creepage spacing</u></p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/creepVClear.png"><img alt="visual representation of clearance vs creepage discussed above" src="_images/creepVClear.png" style="width: 634.4000000000001px; height: 237.60000000000002px;" /></a>
+</div>
+<p>Determining creepage spacing</p>
 <p><strong>Pollution degree</strong>: Degree 1 - our circuit will be enclosed, dust proof, and indoors therefore falls under only dry non-conductive however, the fabrication shop does get very cold in the winter and can experience temperature swings over the course of the day so condensation is a possibility.
 <strong>PCB material</strong>: FR4
-<strong>FR4 CTI</strong>: 175 therefore material group IIIb.<br /><strong>Max current (Signal lines)</strong>: 40mA DC (ESP32 GPIO limit).
+<strong>FR4 CTI</strong>: 175 therefore material group IIIb.
+<strong>Max current (Signal lines)</strong>: 40mA DC (ESP32 GPIO limit).
 <strong>Max current (5V lines)</strong>: 1A (DC limit of our PSU).
 <strong>Max current (AC lines)</strong>: 0.5A (AC limit of our PSU/Fuse threshold).</p>
 <p>Given that our system could have either 120V or 240V supply we must plan for clearance and creepage at 240V. Additionally although our deployment mostly falls under pollution degree 1 using the spacing recommendations for spacing level 3 (where possible) will help us guard against edge cases.</p>
-<p>Clearance calculation at 240V
-<img alt="dcfa7dfef7616ca484b450242055016c.png" src=":/c80cf014d720440f8b6b7ad06b1333c6" />
-Source: https://www.smps.us/pcbtracespacing.html</p>
-<p>Creepage calculation at 240V pollution degree 1 and 3
-<img alt="9c36e94cb88f419afeb9491e59f662be.png" src=":/a69857e221cf4c25875aa11e6f0d5e93" />
-Source: https://pcbdesign.smps.us/creepage.html.
-Units: mm.</p>
+<div class="figure align-center" id="id3">
+<a class="reference internal image-reference" href="_images/clearCalc.png"><img alt="visual representation of clearance vs creepage discussed above" src="_images/clearCalc.png" style="width: 259.2px; height: 249.60000000000002px;" /></a>
+<p class="caption"><span class="caption-text">Clearance calculation at 240V
+Source: <a class="reference external" href="https://www.smps.us/pcbtracespacing.html">Lazar’s PCB Design Guide</a></span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/creepCalc.png"><img alt="visual representation of clearance vs creepage discussed above" src="_images/creepCalc.png" style="width: 413.6px; height: 173.60000000000002px;" /></a>
+</div>
 <p>With these numbers in mind all AC traces were kept &gt;1.25mm clear of one another and 5mm slots were routed between the high voltage AC side of the board and the low voltage DC side to achieve creepage distances of &gt;4mm.</p>
 </div>
 <div class="section" id="mounting-solutions">
@@ -102,14 +115,22 @@ Units: mm.</p>
 
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="PCBDesign2.html">PCB Design</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PCB Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#kicad-project-files">kiCAD Project Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#learning-pcb-design">Learning PCB Design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ac-creepage-and-clearance-considerations">AC creepage and clearance considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mounting-solutions">Mounting Solutions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bom">BOM</a></li>
+</ul>
+</li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to Victoria Makerspace’s documentation!</a></li>
   </ul></li>
 </ul>
 </div>
@@ -143,7 +164,7 @@ Units: mm.</p>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
-      <a href="_sources/PCBDesign.md.txt"
+      <a href="_sources/PCBDesign.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 

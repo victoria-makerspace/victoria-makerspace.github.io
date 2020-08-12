@@ -1,0 +1,464 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Firmware &#8212; Victoria Makerspace  documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="PCB Design" href="PCBDesign.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="PCBDesign.html" title="PCB Design"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Victoria Makerspace  documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="firmware">
+<h1>Firmware<a class="headerlink" href="#firmware" title="Permalink to this headline">¶</a></h1>
+<p>The firmware for the tool access project is written primarily in Arduino flavoured C++. The RTOS “Real Time Operating System” (based on freeRTOS) that the Arduino
+core for the ESP32 rides on top of is utilized in the RTOS branch for asynchronous task handling. Authentication of RFID cards is carried out at the server level
+rather than at the tool level where the card is read. MQTT is utilized for asynchronous communication with the authentication sever.</p>
+<div class="section" id="linear-vs-rtos-branches">
+<h2>Linear vs RTOS Branches<a class="headerlink" href="#linear-vs-rtos-branches" title="Permalink to this headline">¶</a></h2>
+<p>The firmware for the tool access project has two branches as of Aug 12, 2020: Linear and RTOS.</p>
+<p>The linear branch is “standard” linear Arduino code. It can’t query a database and instead uses a hardcoded UID’s as a “stub” for authorization of cards.</p>
+<p>The RTOS branch utilizes the  RTOS running underneath the Arduino layer for more graceful task handling. The Arduino framework is still utilized to interact
+with peripherals but is wrapped in RTOS Tasks. This branch communicates with an MQTT broker via WiFi for authentication of RFID cards.</p>
+</div>
+<div class="section" id="learning-rtos-on-the-esp32">
+<h2>Learning RTOS on the ESP32<a class="headerlink" href="#learning-rtos-on-the-esp32" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://www.youtube.com/watch?v=E9FY-IOvC3Q">ESP32 Meet-up FreeRTOS</a> I watched this on 1.75X to give me the basic gist of the RTOS API</p>
+<p><a class="reference external" href="https://www.freertos.org/wp-content/uploads/2018/07/161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf">Mastering the FreeRTOS Real Time Kernel</a> This is an official freeRTOS resource. The ESP RTOS is based on it but is not exactly the same. I recommend skipping striaght to the section on Task Management.</p>
+<p><a class="reference external" href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/freertos-smp.html">ESP-IDF FreeRTOS SMP Changes</a> Espressif’s documentation for the differences bewteen ESP32’s RTOS and vanilla freeRTOS</p>
+<p><a class="reference external" href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos.html">ESP32 FreeRTOS API Reference</a> The Espressif documentation for their flavour of FreeRTOS</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Do not solely utilizes the freeRTOS documentation without referencing Espressif’s ESP32 specific RTOS documentation.
+There are differences in how the two are implemented.</p>
+</div>
+</div>
+<div class="section" id="tool-access-data-structures">
+<h2>Tool Access Data Structures<a class="headerlink" href="#tool-access-data-structures" title="Permalink to this headline">¶</a></h2>
+<p>One of the constraints of working with RTOS is that tasks cannot be passed any number of variables like a regular function. Instead they take a single void point (void <a href="#id1"><span class="problematic" id="id2">*</span></a>).
+RTOS has a number of tools for passing data between tasks such as queues, stream, and message buffers. Instead of using these more complex tools the Tool Access Firmware
+simply passes the address of nested structures via the void pointer at task creation. This allows for the tasks to continue passing down the struct pointer to
+help functions they may need to call.</p>
+<p>These nested structures are described in <code class="docutils literal notranslate"><span class="pre">`toolAccessRTOS.h`</span></code></p>
+<div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37</pre></div></td><td class="code"><div class="highlight"><pre><span></span> <span class="c1">// Struct for holding UID and manipulating of UID data type</span>
+ <span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+     <span class="n">byte</span> <span class="n">uid_ByteBuffer</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span> <span class="c1">// Holds UID read out of MFRC522 library</span>
+     <span class="n">byte</span> <span class="n">uid_ByteLength</span><span class="p">;</span>     <span class="c1">// Holds size of uid_ByteBuffer</span>
+     <span class="n">byte</span> <span class="n">uid_Test</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>
+     <span class="c1">// Holds the string version of the uid byte living in the mfrc522 struct</span>
+     <span class="kt">size_t</span> <span class="n">uidStrLen</span><span class="p">;</span> <span class="c1">// Holds the length (not size) of uidStr</span>
+     <span class="kt">char</span> <span class="n">uidStr</span><span class="p">[</span><span class="mi">31</span><span class="p">];</span> <span class="c1">// Biggest possible UID is 10bytes * 3 (because we : separate, eg. 0xFF:etc) + 1 (NULL) = 31</span>
+     <span class="c1">// Counter used in detecting card collisions</span>
+     <span class="kt">char</span> <span class="n">collCounter</span><span class="p">;</span>
+ <span class="p">}</span><span class="n">cardParams</span><span class="p">;</span>
+
+ <span class="c1">// Stuct for passing desired LED parameters</span>
+ <span class="k">typedef</span> <span class="k">struct</span><span class="p">{</span>
+     <span class="kt">int</span> <span class="n">led</span><span class="p">;</span> <span class="c1">// # of LED in FastLED array</span>
+     <span class="kt">int</span> <span class="n">time</span><span class="p">;</span> <span class="c1">// blink rate</span>
+     <span class="kt">bool</span> <span class="n">blink</span><span class="p">;</span> <span class="c1">// whether to blink or not</span>
+     <span class="n">CRGB</span> <span class="n">myColour</span><span class="p">;</span>
+ <span class="p">}</span> <span class="n">LEDParams</span><span class="p">;</span>
+
+ <span class="c1">// Struct for holding timer information</span>
+ <span class="k">typedef</span> <span class="k">struct</span><span class="p">{</span>
+     <span class="kt">uint32_t</span> <span class="n">ms_timeLast</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// millisecond timer for holding last time was in a function.</span>
+     <span class="kt">uint32_t</span> <span class="n">ms_timeOut</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Holds ms_timeOut count down for when card is removed.</span>
+     <span class="kt">uint32_t</span> <span class="n">ms_tooluseTime</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Holds time relay was opened on timeout and therefore the time the tool was in use</span>
+     <span class="kt">char</span> <span class="n">min_tooluseTime</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+     <span class="kt">uint32_t</span> <span class="n">ms_relayStart</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Holds time (milliseconds) at initial closing of relay</span>
+     <span class="kt">uint32_t</span> <span class="n">ms_wifi_outage</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// ?</span>
+ <span class="p">}</span> <span class="n">Timers</span><span class="p">;</span>
+
+ <span class="c1">// Struct for holding cardParams, LEDParams, and Timers</span>
+ <span class="k">typedef</span> <span class="k">struct</span><span class="p">{</span>
+     <span class="n">LEDParams</span> <span class="n">LEDParams0</span><span class="p">;</span> <span class="c1">// Parameters for LED0</span>
+     <span class="n">LEDParams</span> <span class="n">LEDParams1</span><span class="p">;</span>  <span class="c1">// Parameters for LED1</span>
+     <span class="n">Timers</span> <span class="n">timers</span><span class="p">;</span>         <span class="c1">// Instance Timers struct to hold all of our relevant timers</span>
+     <span class="n">cardParams</span> <span class="n">card</span><span class="p">;</span>      <span class="c1">// Holds info about read card</span>
+ <span class="p">}</span> <span class="n">metaStruct</span><span class="p">;</span>
+</pre></div>
+</td></tr></table></div>
+<p>metaStruct contains declared members of the other structs. It functions as a container who’s address we may pass via the void pointer.</p>
+<p><strong>Passing our structs via the void pointer</strong></p>
+<div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="c1">// Example RTOS Tasks</span>
+<span class="kt">void</span> <span class="nf">pollNewTask</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">params</span><span class="p">){</span>
+      <span class="cm">/* We may transfer our pointer address</span>
+<span class="cm">      from our void pointer to a new variable via casting*/</span>
+      <span class="n">metaStruct</span> <span class="o">*</span><span class="n">progParams</span> <span class="o">=</span> <span class="p">(</span><span class="n">metaStruct</span><span class="o">*</span><span class="p">)</span> <span class="n">params</span><span class="p">;</span>
+
+     <span class="c1">// We may now access our struct members like so</span>
+     <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">card</span><span class="p">.</span><span class="n">uidByte</span><span class="p">;</span> <span class="c1">// Only progParams is a pointer requiring the -&gt; operator.</span>
+     <span class="c1">// After accessing via point we must use the . operator</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">setup</span><span class="p">(){</span>
+     <span class="c1">// All code we wish to only run once is still placed in void setup</span>
+
+     <span class="c1">// We declare a member of metaStruct, our container</span>
+     <span class="n">metaStruct</span> <span class="n">progParams</span><span class="p">;</span>
+
+     <span class="c1">// If any of our struct variables require initialization we do so</span>
+     <span class="n">progParams</span><span class="p">.</span><span class="n">LEDParams0</span><span class="p">.</span><span class="n">myColour</span> <span class="o">=</span> <span class="n">CRGB</span><span class="o">::</span><span class="n">Black</span><span class="p">;</span> <span class="c1">// We want our LEDs to start off</span>
+     <span class="n">progParams</span><span class="p">.</span><span class="n">LEDParams0</span><span class="p">.</span><span class="n">led</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Notice that because we are still in setup we access</span>
+     <span class="n">progParams</span><span class="p">.</span><span class="n">LEDParams1</span><span class="p">.</span><span class="n">led</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">// with the . operator all the way down our structs</span>
+     <span class="n">progParams</span><span class="p">.</span><span class="n">LEDParams0</span><span class="p">.</span><span class="n">blink</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+     <span class="n">progParams</span><span class="p">.</span><span class="n">LEDParams1</span><span class="p">.</span><span class="n">blink</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+     <span class="c1">// Here we pass the address of just progParams to our pollNew Task via the void * parameter</span>
+     <span class="n">xTaskCreatePinnedToCore</span><span class="p">(</span><span class="n">pollNewTask</span><span class="p">,</span> <span class="s">&quot;pollNewTask&quot;</span><span class="p">,</span> <span class="mi">2048</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">progParams</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pollNewHandle</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">loop</span><span class="p">(){</span>
+<span class="c1">// Loop is not used when working with the RTOS</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="peripheral-interactions">
+<h2>Peripheral Interactions<a class="headerlink" href="#peripheral-interactions" title="Permalink to this headline">¶</a></h2>
+<p>As of Aug 12, 2020 the tool access system has a set list of peripherals:
+1. 2X COM12999 Addressable LEDs
+2. 1X MFRC522 RFID Module
+3. 1X Power relay and associated driver circuit</p>
+<div class="section" id="rfid-mfrc522-module">
+<h3>RFID - MFRC522 Module<a class="headerlink" href="#rfid-mfrc522-module" title="Permalink to this headline">¶</a></h3>
+<p>Technical documentation:</p>
+<p><a class="reference external" href="https://docu.byzance.cz/hardware-a-programovani/programovani-hw/knihovny/mfrc522">List of status codes and types</a></p>
+<p><a class="reference external" href="https://diy.waziup.io/assets/src/sketch/libraries/MFRC522/doc/rfidmifare.pdf">Miguelbalboa write up</a></p>
+<p><a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a></p>
+<p>The cheap and ubiquitous MFRC522 RFID module utilizes the NPX MFRC522 chip which is capable of a great deal more than it is used for in this code.
+All we need it to do is detect a MIFARE card and read its UID. The server side of this project can associate UIDs with specific members if need be.</p>
+<p>Library: <a class="reference external" href="https://github.com/miguelbalboa/rfid">Miguelbaoboa MFR522 Arduino Library</a>. This library if no longer maintained by the original author but instead by community support.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The ability to detect collisions (&gt;1 card in RF field) is not functional on many of the cheap/ubiquitous RC522 modules available.
+This is even called out in the Miguelbaoboa’s RFID library where he speculates that it may be due to poor antenna design. Because of this the collision detection
+implemented in RFID library as per the datasheet recommendations does not function as it should.</p>
+</div>
+<p>Glossary of MIFARE Technical Abbreviations &amp; Terms</p>
+<dl class="glossary docutils">
+<dt id="term-picc">PICC</dt>
+<dd>Proximity Integrated Circuit Card</dd>
+<dt id="term-pcd">PCD</dt>
+<dd>Proximity Coupling Device</dd>
+<dt id="term-uid">UID</dt>
+<dd>Unique IDentifier number set by factory on each PICC (bytes 0..6 of block 0) may be be 4-10 bytes.</dd>
+<dt id="term-sak">SAK</dt>
+<dd>Select ACknowledge</dd>
+<dt id="term-reqa-b">REQA/B</dt>
+<dd>REQuest, type A/B, polling command sent out by PCD ~5ms.</dd>
+<dt id="term-atqa-b">ATQA/B</dt>
+<dd>Answer To reQuest, type A/B, response to REQ returned by PICC if present in RF field.</dd>
+<dt id="term-wupa">WUPA</dt>
+<dd>Wake-Up Protocol, type A</dd>
+<dt id="term-ack">ACK</dt>
+<dd>ACKnowledge</dd>
+<dt id="term-nak">NAK</dt>
+<dd>Not AcKnowledge</dd>
+<dt id="term-por">POR</dt>
+<dd>Power On Reset</dd>
+<dt id="term-crc">CRC</dt>
+<dd>Cyclic Redundancy Check</dd>
+</dl>
+<div class="section" id="manufacturer-recommended-control-loop">
+<h4>Manufacturer Recommended Control Loop<a class="headerlink" href="#manufacturer-recommended-control-loop" title="Permalink to this headline">¶</a></h4>
+<p>!`7743dd5b0abc9f8b621a3c901add9fc5.png &lt;:/3c61707ed3bf49cea1815d1afb6ff0cf&gt;`_
+Card polling block diagram from <a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a> (Pg 5). ATQA/B - Answer to Request. REQA/B - Request Command . A/B - Type A or B card, protocol must be compatible with both and therefore polls both.</p>
+<p>!`c985f20daccaaf4976a0782d38ce6652.png &lt;:/55ef4d97e75542fba10bf009d13c60f1&gt;`_
+Card selection block diagram (without MAD - MIFARE Multiple Application Directory) from <a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a> (Pg 10). N = # of cards in RF field. Reactivate halted cards via WUPA (Wake Up Command).</p>
+<p>Although represented in a slightly confusing manner the control flow diagrams provided by NPX (see above) layout how to interact with the RFID hardware.</p>
+<ol class="arabic simple">
+<li>We poll for new cards. This is done by the MFRC522 broadcasts an REQA/B command. If a card is present in the RF field (and has had 5ms to boot) it will respond with a ATQA/B command.</li>
+<li>We proceed to authenticating the card. This is where the UID is read.</li>
+<li>If a collision occurs (ie. &gt;1 card in the RF field).</li>
+</ol>
+</div>
+<div class="section" id="control-loop-utilized-by-tool-access-project">
+<h4>Control Loop Utilized by Tool Access Project<a class="headerlink" href="#control-loop-utilized-by-tool-access-project" title="Permalink to this headline">¶</a></h4>
+<p><strong>States</strong></p>
+<p>The control flow for the RFID hardware is state based. Our ESP should only close the relay under certain circumstances.
+The states and the transitions between those states are a result of the number of RFID cards present in the modules RF field.</p>
+<ol class="arabic simple">
+<li><em>No cards present</em> - in this state we poll for the arrival of new cards.</li>
+<li><em>One card present</em> - in this state we have detected a card. We must authorize it if the relay is to be closed. We must also shift from polling for new cards
+to polling for the continued presence of our detected card and polling for a collision event.</li>
+<li><em>Collision (&gt;1 card present)</em> - In this state we have detected a collision and we transition to Timeout state. Why is this done? We can detect the resolution
+of a collision ie. one of the cards being removed however in the case of an unauthorized card colliding with an authorized one tailing in can be achieved by
+careful removal of the authorized card.</li>
+<li><em>timingOut</em> - In this state a timer is run down because either a collision has occurred or a card has been removed. This state can be exited by introducing
+a new card to reader or on expiration of the timer. Therefore we may think of it as occurring concurrently with the no cards present state.</li>
+</ol>
+<div class="figure align-center" id="id5">
+<img alt="State diagram for MFRC522 Hardware" src="_images/toolAccessStates.png" />
+<p class="caption"><span class="caption-text">All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally.</span></p>
+</div>
+<p>This state diagram holds true for both the Linear and the RTOS branches of the code. Authorization step omitted for clarity.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The unconditional transition from the Collision state to the timingOut state is necessary due to the MFRC522 modules returning TIMEOUT status codes instead of
+COLLISION status code in the event of a collision. This does not prevent us from detect collisions but rather detecting how a collision is resolve.
+Therefore the decision was made to push all collisions to the timingOut state.</p>
+</div>
+<div class="section" id="state-transitions-in-rtos">
+<h5>State Transitions in RTOS<a class="headerlink" href="#state-transitions-in-rtos" title="Permalink to this headline">¶</a></h5>
+</div>
+</div>
+</div>
+<div class="section" id="com12999-addressable-leds">
+<h3>COM12999 - Addressable LEDs<a class="headerlink" href="#com12999-addressable-leds" title="Permalink to this headline">¶</a></h3>
+<p>Library : <a class="reference external" href="https://github.com/FastLED/FastLED">FastLED</a></p>
+<p>blinky LED Task</p>
+</div>
+</div>
+<div class="section" id="mqtt">
+<h2>MQTT<a class="headerlink" href="#mqtt" title="Permalink to this headline">¶</a></h2>
+<p>Library: <a class="reference external" href="https://github.com/marvinroger/async-mqtt-client">Async MQQT Client</a></p>
+<div class="section" id="proposed-topic-structure">
+<h3>Proposed Topic Structure<a class="headerlink" href="#proposed-topic-structure" title="Permalink to this headline">¶</a></h3>
+<p>Technical documentation:
+<a class="reference external" href="https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/">MQTT Topics &amp; Best Practices</a></p>
+<p>This is the proposed MQTT Topic Structure</p>
+<div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="c1">// + single level wildcard</span>
+<span class="c1">// # multi level wildcard</span>
+<span class="c1">// wildcards may be used to subscribe to topics only not publish</span>
+
+<span class="c1">// Whoami - would allows tool to append hardcoded MQTT topics to include workshop/toolalias</span>
+<span class="n">tool</span><span class="o">/</span><span class="n">MAC</span> <span class="c1">// payload: workshop, toolalias</span>
+
+<span class="c1">// Workshops level topics</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">woodshop</span><span class="o">/</span><span class="n">toolalias</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">fasbshop</span><span class="o">/</span><span class="n">toolalias</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">machineshop</span><span class="o">/</span><span class="n">toolalias</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">electronics</span><span class="o">/</span><span class="n">toolalias</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">sewing</span><span class="o">/</span><span class="n">toolalias</span>
+
+<span class="c1">// Authorization topics</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">auth</span><span class="o">/</span><span class="n">req</span> <span class="c1">// payloads: UID</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">auth</span><span class="o">/</span><span class="n">rsp</span> <span class="c1">// payloads: auth|denied|seekiosk</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">auth</span><span class="o">/</span><span class="n">eou</span> <span class="c1">// uid</span>
+
+<span class="c1">// Estop topics</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">estop</span>   <span class="c1">// Makerspace level</span>
+<span class="n">tools</span><span class="o">/+/</span><span class="n">estop</span> <span class="c1">// Workshop level</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">estop</span> <span class="c1">// Tool level</span>
+
+<span class="c1">// Logging topics</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span> <span class="c1">// payload: status</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span><span class="n">status</span><span class="o">/</span><span class="n">rsp</span> <span class="c1">// payload: true, sizeoflog|false</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span><span class="n">send</span> <span class="c1">// payload: req</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span><span class="n">send</span> <span class="c1">//payload: JSON document holding logs?</span>
+</pre></div>
+</td></tr></table></div>
+<p># Roadmap to Further Development
+## Optimization
+### Interrupt functionality of the MFRC522 module
+The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnect so that is may be soldered to one of the ESP pins if desired.</p>
+<p>If this is to be pursued RTOS function calls will need to be changed to their ISR safe equivalents.</p>
+<p>### Shrinking program size for OTA
+For the over the air updates functionality to be used our program must occupty &lt;50% of flash memory. As of 2020/08/07 it occupies ~59%. Additioanlly as part of the OTA process logs from tools will havbe to be requested and trasnmitted before the OTA is initiated as this process will likely overwrite the SPIFFS partition.</p>
+<p>## Future features
+## Potential Pitfalls</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Firmware</a><ul>
+<li><a class="reference internal" href="#linear-vs-rtos-branches">Linear vs RTOS Branches</a></li>
+<li><a class="reference internal" href="#learning-rtos-on-the-esp32">Learning RTOS on the ESP32</a></li>
+<li><a class="reference internal" href="#tool-access-data-structures">Tool Access Data Structures</a></li>
+<li><a class="reference internal" href="#peripheral-interactions">Peripheral Interactions</a><ul>
+<li><a class="reference internal" href="#rfid-mfrc522-module">RFID - MFRC522 Module</a><ul>
+<li><a class="reference internal" href="#manufacturer-recommended-control-loop">Manufacturer Recommended Control Loop</a></li>
+<li><a class="reference internal" href="#control-loop-utilized-by-tool-access-project">Control Loop Utilized by Tool Access Project</a><ul>
+<li><a class="reference internal" href="#state-transitions-in-rtos">State Transitions in RTOS</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#com12999-addressable-leds">COM12999 - Addressable LEDs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#mqtt">MQTT</a><ul>
+<li><a class="reference internal" href="#proposed-topic-structure">Proposed Topic Structure</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PCBDesign.html"
+                        title="previous chapter">PCB Design</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Firmware.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="PCBDesign.html" title="PCB Design"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Victoria Makerspace  documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Liam Brinston.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

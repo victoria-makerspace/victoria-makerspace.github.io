@@ -29,6 +29,9 @@ author = 'Liam Brinston'
 # ones.
 extensions = []
 
+# Trying to resolve Sphinx error of contents.rst not found
+master_doc = 'index'
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

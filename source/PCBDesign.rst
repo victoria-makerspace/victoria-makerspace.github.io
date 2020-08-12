@@ -2,35 +2,63 @@
 PCB Design
 ============
 
-`Software of choice: kiCAD <https://kicad-pcb.org/>`_
-Reasoning: Its free and well supported.
+| Software of choice\: `kiCAD <https://kicad-pcb.org/>`_
 
-___________________
-kiCAD Project Files
-___________________
 
-kiCAD Project files can be downloaded  
-:download:`toolAccess.zip <./files/toolAccess.zip>`
-
-Download the files above, unzip them into your desired directory, and then open the toolAccess.pro file from kiCAD > File > Open Project.
-The project file includes all of the revisions made by myself (Liam Brinston) during my co-op term in the summer of 2020.
-
-Insert text talking about different revisions and inheritance from eeSchema
-
-____________________
 Learning PCB Design
-____________________
+--------------------
 
 For those interested in learning to design their own PCBs. These are the resources I utilized during my co-op. They are focused on PCB design and PCB CAD tools not circuit theory.
 
-| `Digi-Key's Intro to kiCAD: <https://www.youtube.com/watch?v=vaCVh2SAZY4/i>`_ this series alone taught me kiCAD. A heads up the version you use will likely be different. If an icon isn't where it appears in the video look in the comments and someone has posted where it got moved to. Also its a 10 video series I recommend 1.75X speed.
-| `Importing custom graphics into kiCAD <https://www.youtube.com/watch?v=w_7iRCyau7w>`_ - If you want to fancy up your boards.
-| `PCB Trace Width Calculator <https://www.4pcb.com/trace-width-calculator.html>`_ - To help with determine trace sizes.
- 
+* `Digi-Key's Intro to kiCAD: <https://www.youtube.com/watch?v=vaCVh2SAZY4/i>`_ this series alone taught me kiCAD. A heads up the version you use will likely be different. If an icon isn't where it appears in the video look in the comments for the new location.
+* `Importing custom graphics into kiCAD <https://www.youtube.com/watch?v=w_7iRCyau7w>`_ - If you want to fancy up your boards.
+* `PCB Trace Width Calculator <https://www.4pcb.com/trace-width-calculator.html>`_ - To help with determine trace sizes.
+* `SnapEDA <https://www.snapeda.com/>`_ - Free symbol, footprint, and 3D model files
 
-________________________________________
+
+kiCAD Project Files
+--------------------
+
+This section contain all of the PCB design file made by myself (Liam Brinston) during my co-op term in the summer of 2020.
+
+The have been broken out into project files of various sizes depending on what level of interest you may have.
+
+Download the files, unzip them into your desired working directory, and then open the toolAccess.pro file from kiCAD > File > Open Project.
+
+.. note::
+   For either set of project files there are two sets of footprints and symbols that must be added to your kiCAD library paths\:
+   
+   The footprints that were made in the course of my co-op live in the toolAccess.pretty folder.
+   
+   The footprints and symbols libraries I acquired via SnapEDA in the libraries folder.
+   
+   It should be noted that the SPADE_TERMINAL_6.3MM.kicad_model files for the spade terminal (aka. FastOn) were modified by the author to include surface mount solder pads in addition to through holes for additional rigidity.
+
+
+**Most recent kiCAD Project files\:**
+:download:`toolAccessPrjMaster.zip <./files/toolAccessPrjMaster.zip>`
+
+These files are the most recent revision of the project used to produce the second iteration of the physical tool access prototype.
+
+
+**Complete Co-op 2020 kiCAD Project files\:**  
+:download:`toolAccessPrjComplete.zip <./files/toolAccessPrjComplete.zip>`
+
+The project file contains all of the revisions made by myself (Liam Brinston) during my co-op term in the summer of 2020. They are not all complete, some are merely part layouts while others are totally traced out. I have included this complete project file should it prove necessary to understand how the final design was arrived at. 
+
+As this project is much larger with more revisions the file inheritance in the project can be referenced according to this diagram\:
+
+.. figure:: ./images/kiCADInheritance.png
+   :align: center
+
+   Inheritance diagram for the complete kiCAD project files. Showing which PCBNew files inherit from which eeSchema files via the netlist file.
+
+**Makerspace Silkscreen Logo\:**
+:download:`makerSpaceSilkLogo.zip <./files/makerSpaceSilkLogo.zip>`
+
+
 AC creepage and clearance considerations
-________________________________________
+-------------------------------------------
 
 Useful technical documentation:
 
@@ -51,7 +79,7 @@ Our circuit has a small number of high voltage AC traces. Namely the spade termi
 .. figure:: ./images/creepVClear.png
    :scale: 80
    :align: center
-   :alt: visual representation of clearance vs creepage discussed above
+   :alt: visual representation of clearance vs creepage described above
 
    Source\: `High Voltage PCB Design Creepage and Clearance Distance <https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance>`_
 
@@ -73,7 +101,7 @@ Given that our system could have either 120V or 240V supply we must plan for cle
    :alt: visual representation of clearance vs creepage discussed above
    
    Clearance calculation at 240V
-   Source: `Lazar's PCB Design Guide <https://www.smps.us/pcbtracespacing.html>`_
+   Source: `Lazar's PCB Design Guide - Clearance <https://www.smps.us/pcbtracespacing.html>`_
 
 .. figure:: ./images/creepCalc.png
    :scale: 80
@@ -81,16 +109,18 @@ Given that our system could have either 120V or 240V supply we must plan for cle
    :alt: visual representation of clearance vs creepage discussed above
 
    Creepage calculation at 240V pollution degree 1 and 3
-   Source: `Lazar's PCB Design Guide <https://pcbdesign.smps.us/creepage.html>`_
+   Source: `Lazar's PCB Design Guide - Creepage <https://pcbdesign.smps.us/creepage.html>`_
    Units: mm.
 
 With these numbers in mind all AC traces were kept >1.25mm clear of one another and 5mm slots were routed between the high voltage AC side of the board and the low voltage DC side to achieve creepage distances of >4mm.
 
-___________________
-Mounting Solutions
-___________________
 
-____________
+Mounting Solutions
+-------------------
+
+TBD
+
+
 BOM
-____________
+-----
 

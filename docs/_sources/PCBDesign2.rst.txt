@@ -1,0 +1,147 @@
+============
+PCB Design
+============
+
+`Software of choice: kiCAD <https://kicad-pcb.org/>`_
+Reasoning: Its free and well supported.
+
+<<<<<<< HEAD:build/_sources/PCBDesign2.rst.txt
+=======
+___________________
+kiCAD Project Files
+___________________
+
+kiCAD Project files can be downloaded  
+:download:`toolAccess.zip <./files/toolAccess.zip>`
+
+Download the files above, unzip them into your desired directory, and then open the toolAccess.pro file from kiCAD > File > Open Project.
+The project file includes all of the revisions made by myself (Liam Brinston) during my co-op term in the summer of 2020.
+
+Insert text talking about different revisions and inheritance from eeSchema
+
+>>>>>>> 3c69661339a7fb3350b93163d97efd7c7f7074a7:docs/_sources/PCBDesign2.rst.txt
+____________________
+Learning PCB Design
+____________________
+
+For those interested in learning to design their own PCBs. These are the resources I utilized during my co-op. They are focused on PCB design and PCB CAD tools not circuit theory.
+
+| `Digi-Key's Intro to kiCAD: <https://www.youtube.com/watch?v=vaCVh2SAZY4/i>`_ this series alone taught me kiCAD. A heads up the version you use will likely be different. If an icon isn't where it appears in the video look in the comments and someone has posted where it got moved to. Also its a 10 video series I recommend 1.75X speed.
+| `Importing custom graphics into kiCAD <https://www.youtube.com/watch?v=w_7iRCyau7w>`_ - If you want to fancy up your boards.
+| `PCB Trace Width Calculator <https://www.4pcb.com/trace-width-calculator.html>`_ - To help with determine trace sizes.
+| `SnapEDA <https://www.snapeda.com/>`_ - - Free symbol, footprint, and 3D model files
+
+___________________
+kiCAD Project Files
+___________________
+
+| This section contain all of the PCB design file made by myself (Liam Brinston) during my co-op term in the summer of 2020.
+| The have been broken out into project files of various sizes depending on what level of interest you may have.
+| Download the files, unzip them into your desired working directory, and then open the toolAccess.pro file from kiCAD > File > Open Project.
+
+.. note:
+   For either set of project files there are two sets of footprints and symbols that must be added to your kiCAD library paths.
+   The footprints that were made in the course of my co-op live in the toolAccess.pretty folder.
+   The footprints and symbols libraries I acquired via SnapEDA in the libraries folder.
+   It should be noted that the SPADE_TERMINAL_6.3MM.kicad_model files for the spade terminal (aka. FastOn) were modified by the author to include
+   surface mount solder pads in addition to through holes for additional rigidity.
+
+:ref: `Most recent kiCAD Project Files <_mostReckiCAD>`_
+:ref: `Complete Co-op 2020 kiCAD Project Files <_completekiCAD>`_
+:ref: `Makerspace Silkscreen Logo <_spaceSilk>`_
+
+.. _mostReckiCAD:
+Most recent kiCAD Project files\:
+Files here
+
+| These files are the most recent revision of the project used to produce the second iteration of the physical tool access prototype.
+| Included are all the footprints I made for the project and several sizes of the Victoria Makerspace logo in silkscreen.
+ 
+
+.. _completekiCAD:
+Complete Co-op 2020 kiCAD Project files\:  
+:download:`toolAccess.zip <./files/toolAccess.zip>`
+
+
+| The project file contains all of the revisions made by myself (Liam Brinston) during my co-op term in the summer of 2020. They are not all complete, some are merely part layouts
+while others are totally traced out. I have included this complete project file should it prove necessary to understand how the final design was arrived at. 
+| This project file also contains all of the custom footprints I made for the project in the toolAccess.pretty
+
+toolAccessRev03.sch & toolAccess100Hx100WRev06.kicad_pcb are the files listed under most recent kiCAD project files. 
+
+
+toolAccess91Hx71WRev01.kicad_pcb - is the first pass at component layout. This revision includes fuse holders rather than THT fuses.
+|As can be see from the file the fuse holders take up a great deal of space.
+
+.. _spaceSilk:
+Makerspace Silkscreen Logo
+
+If you would just like the Makerspace Logo as a silkscreen layer you can download it here\:
+:download:`MSSilkLogo.zip <./files/spaceSilk.zip>`
+
+________________________________________
+AC creepage and clearance considerations
+________________________________________
+
+Useful technical documentation:
+
+| `High Voltage PCB Design Creepage and Clearance Distance <https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance>`_
+| `Advanced Circuits PCB trace width calculator <https://www.4pcb.com/trace-width-calculator.html>`_
+| `Creepage calculator <https://www.smps.us/pcbtracespacing.html>`_
+| `Grounding considerations <https://www.autodesk.com/products/eagle/blog/8-pcb-grounding-rules/>`_
+| `CTI and PTI <https://db-electronic.com/en/pcb-manufacturing_s56.htm>`_
+| `CTI Wikipedia page <https://en.wikipedia.org/wiki/Comparative_Tracking_Index>`_
+
+Clearance - is the shortest distance through air between two conductors. Environmental conditions have a significant effect on this, primarily humidity changes.
+
+Creepage - measures distances between two conductors along the surface of a high voltage PCB.  This requirement varies with the material of your PCB and can be increaed by slotting or routing air gaps between parts.
+
+Our high voltage components
+Our circuit has a small number of high voltage AC traces. Namely the spade terminals where AC power comes onto the boards, our HiLink Mains to 5V PSU, the protection circuitry for the PSU, and the relay contactor pins. These traces will operate at either 120V or 240V depending on the tool being controlled (the HiLink is capable of stepping down both). 
+
+.. figure:: ./images/creepVClear.png
+   :scale: 80
+   :align: center
+   :alt: visual representation of clearance vs creepage discussed above
+
+   Source\: `High Voltage PCB Design Creepage and Clearance Distance <https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance>`_
+
+
+Determining creepage spacing
+
+**Pollution degree**: Degree 1 - our circuit will be enclosed, dust proof, and indoors therefore falls under only dry non-conductive however, the fabrication shop does get very cold in the winter and can experience temperature swings over the course of the day so condensation is a possibility.
+**PCB material**: FR4
+**FR4 CTI**: 175 therefore material group IIIb.  
+**Max current (Signal lines)**: 40mA DC (ESP32 GPIO limit).
+**Max current (5V lines)**: 1A (DC limit of our PSU).
+**Max current (AC lines)**: 0.5A (AC limit of our PSU/Fuse threshold).
+
+Given that our system could have either 120V or 240V supply we must plan for clearance and creepage at 240V. Additionally although our deployment mostly falls under pollution degree 1 using the spacing recommendations for spacing level 3 (where possible) will help us guard against edge cases.
+
+.. figure:: ./images/clearCalc.png
+   :scale: 80
+   :align: center
+   :alt: visual representation of clearance vs creepage discussed above
+   
+   Clearance calculation at 240V
+   Source: `Lazar's PCB Design Guide <https://www.smps.us/pcbtracespacing.html>`_
+
+.. figure:: ./images/creepCalc.png
+   :scale: 80
+   :align: center
+   :alt: visual representation of clearance vs creepage discussed above
+
+   Creepage calculation at 240V pollution degree 1 and 3
+   Source: `Lazar's PCB Design Guide <https://pcbdesign.smps.us/creepage.html>`_
+   Units: mm.
+
+With these numbers in mind all AC traces were kept >1.25mm clear of one another and 5mm slots were routed between the high voltage AC side of the board and the low voltage DC side to achieve creepage distances of >4mm.
+
+___________________
+Mounting Solutions
+___________________
+
+____________
+BOM
+____________
+

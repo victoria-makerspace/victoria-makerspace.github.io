@@ -1,0 +1,214 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PCB Design &#8212; Victoria Makerspace  documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Firmware" href="Firmware.html" />
+    <link rel="prev" title="Welcome to Victoria Makerspace’s Tool Access Project Documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Firmware.html" title="Firmware"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Victoria Makerspace’s Tool Access Project Documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Victoria Makerspace  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PCB Design</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pcb-design">
+<h1>PCB Design<a class="headerlink" href="#pcb-design" title="Permalink to this headline">¶</a></h1>
+<div class="line-block">
+<div class="line">Software of choice: <a class="reference external" href="https://kicad-pcb.org/">kiCAD</a></div>
+</div>
+<div class="section" id="learning-pcb-design">
+<h2>Learning PCB Design<a class="headerlink" href="#learning-pcb-design" title="Permalink to this headline">¶</a></h2>
+<p>For those interested in learning to design their own PCBs. These are the resources I utilized during my co-op. They are focused on PCB design and PCB CAD tools not circuit theory.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.youtube.com/watch?v=vaCVh2SAZY4/i">Digi-Key’s Intro to kiCAD:</a> this series alone taught me kiCAD. A heads up the version you use will likely be different. If an icon isn’t where it appears in the video look in the comments for the new location.</p></li>
+<li><p><a class="reference external" href="https://www.youtube.com/watch?v=w_7iRCyau7w">Importing custom graphics into kiCAD</a> - If you want to fancy up your boards.</p></li>
+<li><p><a class="reference external" href="https://www.4pcb.com/trace-width-calculator.html">PCB Trace Width Calculator</a> - To help with determine trace sizes.</p></li>
+<li><p><a class="reference external" href="https://www.snapeda.com/">SnapEDA</a> - Free symbol, footprint, and 3D model files</p></li>
+</ul>
+</div>
+<div class="section" id="kicad-project-files">
+<h2>kiCAD Project Files<a class="headerlink" href="#kicad-project-files" title="Permalink to this headline">¶</a></h2>
+<p>This section contain all of the PCB design file made by myself (Liam Brinston) during my co-op term in the summer of 2020.</p>
+<p>The have been broken out into project files of various sizes depending on what level of interest you may have.</p>
+<p>Download the files, unzip them into your desired working directory, and then open the toolAccess.pro file from kiCAD &gt; File &gt; Open Project.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For either set of project files there are two sets of footprints and symbols that must be added to your kiCAD library paths:</p>
+<p>The footprints that were made in the course of my co-op live in the toolAccess.pretty folder.</p>
+<p>The footprints and symbols libraries I acquired via SnapEDA in the libraries folder.</p>
+<p>It should be noted that the SPADE_TERMINAL_6.3MM.kicad_model files for the spade terminal (aka. FastOn) were modified by the author to include surface mount solder pads in addition to through holes for additional rigidity.</p>
+</div>
+<p><strong>Most recent kiCAD Project files:</strong>
+<a class="reference download internal" download="" href="_downloads/9d4ecbe3e901cb986e9231e83a601e68/toolAccessPrjMaster.zip"><code class="xref download docutils literal notranslate"><span class="pre">toolAccessPrjMaster.zip</span></code></a></p>
+<p>These files are the most recent revision of the project used to produce the second iteration of the physical tool access prototype.</p>
+<p><strong>Complete Co-op 2020 kiCAD Project files:</strong>
+<a class="reference download internal" download="" href="_downloads/05b183caeee5acd69958610784d2b39c/toolAccessPrjComplete.zip"><code class="xref download docutils literal notranslate"><span class="pre">toolAccessPrjComplete.zip</span></code></a></p>
+<p>The project file contains all of the revisions made by myself (Liam Brinston) during my co-op term in the summer of 2020. They are not all complete, some are merely part layouts while others are totally traced out. I have included this complete project file should it prove necessary to understand how the final design was arrived at.</p>
+<p>As this project is much larger with more revisions the file inheritance in the project can be referenced according to this diagram:</p>
+<div class="figure align-center" id="id2">
+<img alt="_images/kiCADInheritance.png" src="_images/kiCADInheritance.png" />
+<p class="caption"><span class="caption-text">Inheritance diagram for the complete kiCAD project files. Showing which PCBNew files inherit from which eeSchema files via the netlist file.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<p><strong>Makerspace Silkscreen Logo:</strong>
+<a class="reference download internal" download="" href="_downloads/6fa79751262daf7e369fe06fb6d0d55a/makerSpaceSilkLogo.zip"><code class="xref download docutils literal notranslate"><span class="pre">makerSpaceSilkLogo.zip</span></code></a></p>
+</div>
+<div class="section" id="ac-creepage-and-clearance-considerations">
+<h2>AC creepage and clearance considerations<a class="headerlink" href="#ac-creepage-and-clearance-considerations" title="Permalink to this headline">¶</a></h2>
+<p>Useful technical documentation:</p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance">High Voltage PCB Design Creepage and Clearance Distance</a></div>
+<div class="line"><a class="reference external" href="https://www.4pcb.com/trace-width-calculator.html">Advanced Circuits PCB trace width calculator</a></div>
+<div class="line"><a class="reference external" href="https://www.smps.us/pcbtracespacing.html">Creepage calculator</a></div>
+<div class="line"><a class="reference external" href="https://www.autodesk.com/products/eagle/blog/8-pcb-grounding-rules/">Grounding considerations</a></div>
+<div class="line"><a class="reference external" href="https://db-electronic.com/en/pcb-manufacturing_s56.htm">CTI and PTI</a></div>
+<div class="line"><a class="reference external" href="https://en.wikipedia.org/wiki/Comparative_Tracking_Index">CTI Wikipedia page</a></div>
+</div>
+<p>Clearance - is the shortest distance through air between two conductors. Environmental conditions have a significant effect on this, primarily humidity changes.</p>
+<p>Creepage - measures distances between two conductors along the surface of a high voltage PCB.  This requirement varies with the material of your PCB and can be increaed by slotting or routing air gaps between parts.</p>
+<p>Our high voltage components
+Our circuit has a small number of high voltage AC traces. Namely the spade terminals where AC power comes onto the boards, our HiLink Mains to 5V PSU, the protection circuitry for the PSU, and the relay contactor pins. These traces will operate at either 120V or 240V depending on the tool being controlled (the HiLink is capable of stepping down both).</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/creepVClear.png"><img alt="visual representation of clearance vs creepage described above" src="_images/creepVClear.png" style="width: 634.4000000000001px; height: 237.60000000000002px;" /></a>
+</div>
+<p>Determining creepage spacing</p>
+<p><strong>Pollution degree</strong>: Degree 1 - our circuit will be enclosed, dust proof, and indoors therefore falls under only dry non-conductive however, the fabrication shop does get very cold in the winter and can experience temperature swings over the course of the day so condensation is a possibility.
+<strong>PCB material</strong>: FR4
+<strong>FR4 CTI</strong>: 175 therefore material group IIIb.
+<strong>Max current (Signal lines)</strong>: 40mA DC (ESP32 GPIO limit).
+<strong>Max current (5V lines)</strong>: 1A (DC limit of our PSU).
+<strong>Max current (AC lines)</strong>: 0.5A (AC limit of our PSU/Fuse threshold).</p>
+<p>Given that our system could have either 120V or 240V supply we must plan for clearance and creepage at 240V. Additionally although our deployment mostly falls under pollution degree 1 using the spacing recommendations for spacing level 3 (where possible) will help us guard against edge cases.</p>
+<div class="figure align-center" id="id3">
+<a class="reference internal image-reference" href="_images/clearCalc.png"><img alt="visual representation of clearance vs creepage discussed above" src="_images/clearCalc.png" style="width: 259.2px; height: 249.60000000000002px;" /></a>
+<p class="caption"><span class="caption-text">Clearance calculation at 240V
+Source: <a class="reference external" href="https://www.smps.us/pcbtracespacing.html">Lazar’s PCB Design Guide - Clearance</a></span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+<div class="figure align-center" id="id4">
+<a class="reference internal image-reference" href="_images/creepCalc.png"><img alt="visual representation of clearance vs creepage discussed above" src="_images/creepCalc.png" style="width: 413.6px; height: 173.60000000000002px;" /></a>
+<p class="caption"><span class="caption-text">Creepage calculation at 240V pollution degree 1 and 3
+Source: <a class="reference external" href="https://pcbdesign.smps.us/creepage.html">Lazar’s PCB Design Guide - Creepage</a>
+Units: mm.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>With these numbers in mind all AC traces were kept &gt;1.25mm clear of one another and 5mm slots were routed between the high voltage AC side of the board and the low voltage DC side to achieve creepage distances of &gt;4mm.</p>
+</div>
+<div class="section" id="mounting-solutions">
+<h2>Mounting Solutions<a class="headerlink" href="#mounting-solutions" title="Permalink to this headline">¶</a></h2>
+<p>TBD</p>
+</div>
+<div class="section" id="bom">
+<h2>BOM<a class="headerlink" href="#bom" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">PCB Design</a><ul>
+<li><a class="reference internal" href="#learning-pcb-design">Learning PCB Design</a></li>
+<li><a class="reference internal" href="#kicad-project-files">kiCAD Project Files</a></li>
+<li><a class="reference internal" href="#ac-creepage-and-clearance-considerations">AC creepage and clearance considerations</a></li>
+<li><a class="reference internal" href="#mounting-solutions">Mounting Solutions</a></li>
+<li><a class="reference internal" href="#bom">BOM</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to Victoria Makerspace’s Tool Access Project Documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Firmware.html"
+                        title="next chapter">Firmware</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/PCBDesign.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+<<<<<<< HEAD:build/PCBDesign.html
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Firmware.html" title="Firmware"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Victoria Makerspace’s Tool Access Project Documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Victoria Makerspace  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PCB Design</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Liam Brinston.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.0.
+=======
+    <div class="footer">
+      &copy;2020, Liam Brinston.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/PCBDesign2.rst.txt"
+          rel="nofollow">Page source</a>
+>>>>>>> 3c69661339a7fb3350b93163d97efd7c7f7074a7:docs/PCBDesign2.html
+    </div>
+  </body>
+</html>

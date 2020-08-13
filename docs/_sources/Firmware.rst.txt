@@ -127,25 +127,21 @@ metaStruct contains declared members of the other structs. It functions as a con
 
 Peripheral Interactions
 -----------------------
-As of |today| the tool access system has a set list of peripherals:
-1. 2X COM12999 Addressable LEDs
-2. 1X MFRC522 RFID Module
-3. 1X Power relay and associated driver circuit 
+This section of the documentation focuses on the code I wrote to interact with the peripherals not on explaining how those peripherals work. Where a greater understanding of
+the peripheral may be necessary in order to understand how my code works is the MFRC522 module which has its own page here.
 
 RFID - MFRC522 Module
 ^^^^^^^^^^^^^^^^^^^^^^
 
+The cheap and ubiquitous MFRC522 RFID module utilizes the NPX MFRC522 chip which is capable of a great deal more than it is used for in this project.
+For our purposes all we need it to do is detect a MIFARE card and read it's UID. The server side of this project can associate UIDs with specific members. 
+
 Technical documentation:
 
-`List of status codes and types <https://docu.byzance.cz/hardware-a-programovani/programovani-hw/knihovny/mfrc522>`_
-
-`Miguelbalboa write up <https://diy.waziup.io/assets/src/sketch/libraries/MFRC522/doc/rfidmifare.pdf>`_
-
-`MIFARE ISO/IEC 14443 PICC Selection <https://www.nxp.com/docs/en/application-note/AN10834.pdf>`_
-
-
-The cheap and ubiquitous MFRC522 RFID module utilizes the NPX MFRC522 chip which is capable of a great deal more than it is used for in this code.
-All we need it to do is detect a MIFARE card and read its UID. The server side of this project can associate UIDs with specific members if need be. 
+1. `List of status codes and types <https://docu.byzance.cz/hardware-a-programovani/programovani-hw/knihovny/mfrc522>`_
+2. `Miguelbalboa write up <https://diy.waziup.io/assets/src/sketch/libraries/MFRC522/doc/rfidmifare.pdf>`_
+3. `MFRC522 Datasheet <https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf>`_
+4. `MIFARE ISO/IEC 14443 PICC Selection <https://www.nxp.com/docs/en/application-note/AN10834.pdf>`_ 
 
 Library\: `Miguelbaoboa MFR522 Arduino Library <https://github.com/miguelbalboa/rfid>`_. This library if no longer maintained by the original author but instead by community support.
 
@@ -154,60 +150,6 @@ Library\: `Miguelbaoboa MFR522 Arduino Library <https://github.com/miguelbalboa/
    The ability to detect collisions (>1 card in RF field) is not functional on many of the cheap/ubiquitous RC522 modules available. 
    This is even called out in the Miguelbaoboa's RFID library where he speculates that it may be due to poor antenna design. Because of this the collision detection
    implemented in RFID library as per the datasheet recommendations does not function as it should.
-
-
-Glossary of MIFARE Technical Abbreviations & Terms 
-
-.. glossary::
-   PICC
-      Proximity Integrated Circuit Card
-
-   PCD
-      Proximity Coupling Device
-
-   UID
-      Unique IDentifier number set by factory on each PICC (bytes 0..6 of block 0) may be be 4-10 bytes.
-
-   SAK
-      Select ACknowledge
-
-   REQA/B
-      REQuest, type A/B, polling command sent out by PCD ~5ms.
-
-   ATQA/B
-       Answer To reQuest, type A/B, response to REQ returned by PICC if present in RF field.
-
-   WUPA
-      Wake-Up Protocol, type A
-
-   ACK
-       ACKnowledge
-       
-   NAK
-       Not AcKnowledge
-
-   POR
-      Power On Reset
-
-   CRC
-      Cyclic Redundancy Check
-
-Manufacturer Recommended Control Loop
-""""""""""""""""""""""""""""""""""""""""
-
-!`7743dd5b0abc9f8b621a3c901add9fc5.png <:/3c61707ed3bf49cea1815d1afb6ff0cf>`_
-Card polling block diagram from `MIFARE ISO/IEC 14443 PICC Selection <https://www.nxp.com/docs/en/application-note/AN10834.pdf>`_ (Pg 5). ATQA/B - Answer to Request. REQA/B - Request Command . A/B - Type A or B card, protocol must be compatible with both and therefore polls both. 
-
-!`c985f20daccaaf4976a0782d38ce6652.png <:/55ef4d97e75542fba10bf009d13c60f1>`_
-Card selection block diagram (without MAD - MIFARE Multiple Application Directory) from `MIFARE ISO/IEC 14443 PICC Selection <https://www.nxp.com/docs/en/application-note/AN10834.pdf>`_ (Pg 10). N = # of cards in RF field. Reactivate halted cards via WUPA (Wake Up Command).
-
-Although represented in a slightly confusing manner the control flow diagrams provided by NPX (see above) layout how to interact with the RFID hardware. 
-
-1. We poll for new cards. This is done by the MFRC522 broadcasts an REQA/B command. If a card is present in the RF field (and has had 5ms to boot) it will respond with a ATQA/B command.
-2. We proceed to authenticating the card. This is where the UID is read.
-3. If a collision occurs (ie. >1 card in the RF field).
-
-
 
 Control Loop Utilized by Tool Access Project 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -230,9 +172,11 @@ The states and the transitions between those states are a result of the number o
    :align: center
    :alt: State diagram for MFRC522 Hardware
 
-   All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally.
+   All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally. Authorization step omitted for clarity.
 
-This state diagram holds true for both the Linear and the RTOS branches of the code. Authorization step omitted for clarity.
+This state diagram holds true for both the Linear and the RTOS branches of the code. The states and state transitions are simply handled differently. In the linear
+branches the states are tracked via boolean flag variables and transitions are made via conditional checks against those flags. In the RTOS branch this is done via 
+EventGroups.
 
 .. Note::
    The unconditional transition from the Collision state to the timingOut state is necessary due to the MFRC522 modules returning TIMEOUT status codes instead of
@@ -242,6 +186,43 @@ This state diagram holds true for both the Linear and the RTOS branches of the c
 State Transitions in RTOS
 ''''''''''''''''''''''''''''
 
+In the RTOS branch of the code states are tracked via the EventBits contained within the EventGroup ``rfidStatesGroup``. The EventBits are interacted with via RTOS API calls
+and macros defined in ``toolAccessRTOS.h``.
+
+.. code-block:: C++
+   :linenos:
+   :caption: EventBit macros found in ``toolAccessRTOS.h``
+
+   // Event group macros
+   #define CARD_BIT_0 ( 1 << 0 )
+   #define AUTH_BIT_1 ( 1 << 1 )
+   #define RELAY_BIT_2 ( 1 << 2 )
+   #define TIMEOUT_BIT_3 ( 1 << 3 )
+   #define COLL_BIT_4 ( 1 << 4 )
+   #define ESTOPFIRE_BIT_5 ( 1 << 5 )
+   #define ESTOPCLEAR_BIT_6 ( 1 << 6 )
+   #define WIFIOUT_BIT_7 ( 1 << 7 )
+
+Not all of the EventBits are utilized to make state transitions but are set or cleared according to the state they are named for. 
+
+The three main RTOS API calls used to interact with the Event bits are
+
+.. code-block:: C++
+   :linenos:
+
+   xEventGroupClearBits(EventGroupHandle_t xEventGroup, const EventBits_t uxBitsToClear)); // Clears specified bits
+   xEventGroupSetBits(rfidStatesGroup, (CARD_BIT_0|AUTH_BIT_1)); // Sets specified bits
+   EventBits_t xEventGroupWaitBits(const EventGroupHandle_t xEventGroup,const EventBits_t uxBitsToWaitFor,const BaseType_t xClearOnExit,const BaseType_t xWaitForAllBits,TickType_t xTicksToWait);
+
+Line one shows xEventGroupClearBits as the definition while line 2 shows xEventGroupSetBits as an actual call (they expect the same parameters).
+
+.. important::
+   ``CARD_BIT_0|AUTH_BIT_1`` are passed with :underline:`bitwise OR` because we are creating a bitmask to operator on the binary value contained within 
+   rfidStatesGroup.
+
+Line 3 once again shows a formal definition. xEventGroupWaitBits is the call used to gate state transitions. It blocks a task (not the processor) until the specified bits 
+are set. :underline: `It cannot be used to check for being cleared`.  Notice that it can be configured to block until both specified bits are set or either bit is set. Additionally
+it can clear the bits it checks on returning. 
 
 COM12999 - Addressable LEDs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

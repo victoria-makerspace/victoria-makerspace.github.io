@@ -1,0 +1,262 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>MFRC522 - A Primer &mdash; Victoria Makerspace  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Victoria Makerspace
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="PCBDesign.html">PCB Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Firmware.html">Firmware</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Victoria Makerspace</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>MFRC522 - A Primer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/MFRC522.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="mfrc522-a-primer">
+<h1>MFRC522 - A Primer<a class="headerlink" href="#mfrc522-a-primer" title="Permalink to this headline">¶</a></h1>
+<p>Technical documentation:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf">MFRC522 Datasheet</a></p></li>
+<li><p><a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a></p></li>
+</ol>
+<div class="section" id="purpose-of-this-document">
+<h2>Purpose of this document<a class="headerlink" href="#purpose-of-this-document" title="Permalink to this headline">¶</a></h2>
+<p>The purpose of this document is to provide a primer on how the MFRC522 module functions. For some understanding how the module works may assist in their understand of the
+code written in the course of this project. NPX Semiconductor’s MFRC522 RFID chip can do much more than it is used for in this project. Therefore I will only focus
+on how the MFRC522 functions so far as it is relevant to this project.</p>
+<div class="sidebar">
+<p class="sidebar-title">Glossary of MFRC522 Technical Abbreviations &amp; Terms</p>
+<dl class="glossary simple">
+<dt id="term-PICC">PICC</dt><dd><p>Proximity Integrated Circuit Card</p>
+</dd>
+<dt id="term-PCD">PCD</dt><dd><p>Proximity Coupling Device</p>
+</dd>
+<dt id="term-UID">UID</dt><dd><p>Unique IDentifier number set by factory on each PICC (bytes 0..6 of block 0) may be be 4-10 bytes.</p>
+</dd>
+<dt id="term-SAK">SAK</dt><dd><p>Select ACknowledge</p>
+</dd>
+<dt id="term-REQA-B">REQA/B</dt><dd><p>REQuest, type A/B, polling command sent out by PCD ~5ms.</p>
+</dd>
+<dt id="term-ATQA-B">ATQA/B</dt><dd><p>Answer To reQuest, type A/B, response to REQ returned by PICC if present in RF field.</p>
+</dd>
+<dt id="term-WUPA">WUPA</dt><dd><p>Wake-Up Protocol, type A</p>
+</dd>
+<dt id="term-ACK">ACK</dt><dd><p>ACKnowledge</p>
+</dd>
+<dt id="term-NAK">NAK</dt><dd><p>Not AcKnowledge</p>
+</dd>
+<dt id="term-POR">POR</dt><dd><p>Power On Reset</p>
+</dd>
+<dt id="term-CRC">CRC</dt><dd><p>Cyclic Redundancy Check</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="manufacturer-recommended-control-loop">
+<h2>Manufacturer Recommended Control Loop<a class="headerlink" href="#manufacturer-recommended-control-loop" title="Permalink to this headline">¶</a></h2>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="_images/NPXPolling.png"><img alt="_images/NPXPolling.png" src="_images/NPXPolling.png" style="width: 50%;" /></a>
+</div>
+<p>Card polling block diagram from <a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a> (Pg 5).</p>
+<p>THe MFRC522 polls for cards according to the diagram above. The RF field is switched on, if a card is present the RF field will provide power to the PICC which boots
+into an Idle state (5ms delay required for boot of PICC). The MFRC522 then sends out a REQA/B command (A/B are two different variants of the same command). If a PICC
+is present and in state Idle it will respond to a REQA with an ATQA. The MFRC522 may then proceed to activate that card and preform a transaction. For our purposes that
+transaction is the extraction of the UID.</p>
+<div class="figure align-center">
+<img alt="_images/NPXselection.png" src="_images/NPXselection.png" />
+</div>
+<p>Card selection block diagram (without MAD - MIFARE Multiple Application Directory) from <a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a> (Pg 10). N = # of cards in RF field. Reactivate halted cards via WUPA (Wake Up Command).</p>
+<p>Although represented in a slightly confusing manner the control flow diagrams provided by NPX (see above) layout how to interact with the RFID hardware.</p>
+<ol class="arabic simple">
+<li><p>We poll for new cards. This is done by the MFRC522 broadcasts an REQA/B command. If a card is present in the RF field (and has had 5ms to boot) it will respond with a ATQA/B command.</p></li>
+<li><p>We proceed to authenticating the card. This is where the UID is read.</p></li>
+<li><p>If a collision occurs (ie. &gt;1 card in the RF field).</p></li>
+</ol>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Liam Brinston
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

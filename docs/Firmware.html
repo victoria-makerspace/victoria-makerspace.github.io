@@ -1,42 +1,171 @@
 
-<!DOCTYPE html>
 
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Firmware &#8212; Victoria Makerspace  documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Firmware &mdash; Victoria Makerspace  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="PCB Design" href="PCBDesign.html" /> 
-  </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="PCBDesign.html" title="PCB Design"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Victoria Makerspace  documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Firmware</a></li> 
-      </ul>
-    </div>  
+</head>
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Victoria Makerspace
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="PCBDesign.html">PCB Design</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Firmware</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#linear-vs-rtos-branches">Linear vs RTOS Branches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#learning-rtos-on-the-esp32">Learning RTOS on the ESP32</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tool-access-data-structures">Tool Access Data Structures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#peripheral-interactions">Peripheral Interactions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#rfid-mfrc522-module">RFID - MFRC522 Module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#control-loop-utilized-by-tool-access-project">Control Loop Utilized by Tool Access Project</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#com12999-addressable-leds">COM12999 - Addressable LEDs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#mqtt">MQTT</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#proposed-topic-structure">Proposed Topic Structure</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Victoria Makerspace</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Firmware</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/Firmware.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="firmware">
 <h1>Firmware<a class="headerlink" href="#firmware" title="Permalink to this headline">¶</a></h1>
@@ -45,7 +174,7 @@ core for the ESP32 rides on top of is utilized in the RTOS branch for asynchrono
 rather than at the tool level where the card is read. MQTT is utilized for asynchronous communication with the authentication sever.</p>
 <div class="section" id="linear-vs-rtos-branches">
 <h2>Linear vs RTOS Branches<a class="headerlink" href="#linear-vs-rtos-branches" title="Permalink to this headline">¶</a></h2>
-<p>The firmware for the tool access project has two branches as of Aug 12, 2020: Linear and RTOS.</p>
+<p>The firmware for the tool access project has two branches as of Aug 13, 2020: Linear and RTOS.</p>
 <p>The linear branch is “standard” linear Arduino code. It can’t query a database and instead uses a hardcoded UID’s as a “stub” for authorization of cards.</p>
 <p>The RTOS branch utilizes the  RTOS running underneath the Arduino layer for more graceful task handling. The Arduino framework is still utilized to interact
 with peripherals but is wrapped in RTOS Tasks. This branch communicates with an MQTT broker via WiFi for authentication of RFID cards.</p>
@@ -212,62 +341,25 @@ help functions they may need to call.</p>
 </div>
 <div class="section" id="peripheral-interactions">
 <h2>Peripheral Interactions<a class="headerlink" href="#peripheral-interactions" title="Permalink to this headline">¶</a></h2>
-<p>As of Aug 12, 2020 the tool access system has a set list of peripherals:
-1. 2X COM12999 Addressable LEDs
-2. 1X MFRC522 RFID Module
-3. 1X Power relay and associated driver circuit</p>
+<p>This section of the documentation focuses on the code I wrote to interact with the peripherals not on explaining how those peripherals work. Where a greater understanding of
+the peripheral may be necessary in order to understand how my code works is the MFRC522 module which has its own page here.</p>
 <div class="section" id="rfid-mfrc522-module">
 <h3>RFID - MFRC522 Module<a class="headerlink" href="#rfid-mfrc522-module" title="Permalink to this headline">¶</a></h3>
+<p>The cheap and ubiquitous MFRC522 RFID module utilizes the NPX MFRC522 chip which is capable of a great deal more than it is used for in this project.
+For our purposes all we need it to do is detect a MIFARE card and read it’s UID. The server side of this project can associate UIDs with specific members.</p>
 <p>Technical documentation:</p>
-<p><a class="reference external" href="https://docu.byzance.cz/hardware-a-programovani/programovani-hw/knihovny/mfrc522">List of status codes and types</a></p>
-<p><a class="reference external" href="https://diy.waziup.io/assets/src/sketch/libraries/MFRC522/doc/rfidmifare.pdf">Miguelbalboa write up</a></p>
-<p><a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a></p>
-<p>The cheap and ubiquitous MFRC522 RFID module utilizes the NPX MFRC522 chip which is capable of a great deal more than it is used for in this code.
-All we need it to do is detect a MIFARE card and read its UID. The server side of this project can associate UIDs with specific members if need be.</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://docu.byzance.cz/hardware-a-programovani/programovani-hw/knihovny/mfrc522">List of status codes and types</a></p></li>
+<li><p><a class="reference external" href="https://diy.waziup.io/assets/src/sketch/libraries/MFRC522/doc/rfidmifare.pdf">Miguelbalboa write up</a></p></li>
+<li><p><a class="reference external" href="https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf">MFRC522 Datasheet</a></p></li>
+<li><p><a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a></p></li>
+</ol>
 <p>Library: <a class="reference external" href="https://github.com/miguelbalboa/rfid">Miguelbaoboa MFR522 Arduino Library</a>. This library if no longer maintained by the original author but instead by community support.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The ability to detect collisions (&gt;1 card in RF field) is not functional on many of the cheap/ubiquitous RC522 modules available.
 This is even called out in the Miguelbaoboa’s RFID library where he speculates that it may be due to poor antenna design. Because of this the collision detection
 implemented in RFID library as per the datasheet recommendations does not function as it should.</p>
-</div>
-<p>Glossary of MIFARE Technical Abbreviations &amp; Terms</p>
-<dl class="glossary simple">
-<dt id="term-PICC">PICC</dt><dd><p>Proximity Integrated Circuit Card</p>
-</dd>
-<dt id="term-PCD">PCD</dt><dd><p>Proximity Coupling Device</p>
-</dd>
-<dt id="term-UID">UID</dt><dd><p>Unique IDentifier number set by factory on each PICC (bytes 0..6 of block 0) may be be 4-10 bytes.</p>
-</dd>
-<dt id="term-SAK">SAK</dt><dd><p>Select ACknowledge</p>
-</dd>
-<dt id="term-REQA-B">REQA/B</dt><dd><p>REQuest, type A/B, polling command sent out by PCD ~5ms.</p>
-</dd>
-<dt id="term-ATQA-B">ATQA/B</dt><dd><p>Answer To reQuest, type A/B, response to REQ returned by PICC if present in RF field.</p>
-</dd>
-<dt id="term-WUPA">WUPA</dt><dd><p>Wake-Up Protocol, type A</p>
-</dd>
-<dt id="term-ACK">ACK</dt><dd><p>ACKnowledge</p>
-</dd>
-<dt id="term-NAK">NAK</dt><dd><p>Not AcKnowledge</p>
-</dd>
-<dt id="term-POR">POR</dt><dd><p>Power On Reset</p>
-</dd>
-<dt id="term-CRC">CRC</dt><dd><p>Cyclic Redundancy Check</p>
-</dd>
-</dl>
-<div class="section" id="manufacturer-recommended-control-loop">
-<h4>Manufacturer Recommended Control Loop<a class="headerlink" href="#manufacturer-recommended-control-loop" title="Permalink to this headline">¶</a></h4>
-<p>!`7743dd5b0abc9f8b621a3c901add9fc5.png &lt;:/3c61707ed3bf49cea1815d1afb6ff0cf&gt;`_
-Card polling block diagram from <a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a> (Pg 5). ATQA/B - Answer to Request. REQA/B - Request Command . A/B - Type A or B card, protocol must be compatible with both and therefore polls both.</p>
-<p>!`c985f20daccaaf4976a0782d38ce6652.png &lt;:/55ef4d97e75542fba10bf009d13c60f1&gt;`_
-Card selection block diagram (without MAD - MIFARE Multiple Application Directory) from <a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a> (Pg 10). N = # of cards in RF field. Reactivate halted cards via WUPA (Wake Up Command).</p>
-<p>Although represented in a slightly confusing manner the control flow diagrams provided by NPX (see above) layout how to interact with the RFID hardware.</p>
-<ol class="arabic simple">
-<li><p>We poll for new cards. This is done by the MFRC522 broadcasts an REQA/B command. If a card is present in the RF field (and has had 5ms to boot) it will respond with a ATQA/B command.</p></li>
-<li><p>We proceed to authenticating the card. This is where the UID is read.</p></li>
-<li><p>If a collision occurs (ie. &gt;1 card in the RF field).</p></li>
-</ol>
 </div>
 <div class="section" id="control-loop-utilized-by-tool-access-project">
 <h4>Control Loop Utilized by Tool Access Project<a class="headerlink" href="#control-loop-utilized-by-tool-access-project" title="Permalink to this headline">¶</a></h4>
@@ -286,9 +378,11 @@ a new card to reader or on expiration of the timer. Therefore we may think of it
 </ol>
 <div class="figure align-center" id="id5">
 <img alt="State diagram for MFRC522 Hardware" src="_images/toolAccessStates.png" />
-<p class="caption"><span class="caption-text">All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+<p class="caption"><span class="caption-text">All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally. Authorization step omitted for clarity.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
 </div>
-<p>This state diagram holds true for both the Linear and the RTOS branches of the code. Authorization step omitted for clarity.</p>
+<p>This state diagram holds true for both the Linear and the RTOS branches of the code. The states and state transitions are simply handled differently. In the linear
+branches the states are tracked via boolean flag variables and transitions are made via conditional checks against those flags. In the RTOS branch this is done via
+EventGroups.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The unconditional transition from the Collision state to the timingOut state is necessary due to the MFRC522 modules returning TIMEOUT status codes instead of
@@ -297,6 +391,48 @@ Therefore the decision was made to push all collisions to the timingOut state.</
 </div>
 <div class="section" id="state-transitions-in-rtos">
 <h5>State Transitions in RTOS<a class="headerlink" href="#state-transitions-in-rtos" title="Permalink to this headline">¶</a></h5>
+<p>In the RTOS branch of the code states are tracked via the EventBits contained within the EventGroup <code class="docutils literal notranslate"><span class="pre">rfidStatesGroup</span></code>. The EventBits are interacted with via RTOS API calls
+and macros defined in <code class="docutils literal notranslate"><span class="pre">toolAccessRTOS.h</span></code>.</p>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">EventBit macros found in <code class="docutils literal notranslate"><span class="pre">toolAccessRTOS.h</span></code></span><a class="headerlink" href="#id6" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="c1">// Event group macros</span>
+<span class="cp">#define CARD_BIT_0 ( 1 &lt;&lt; 0 )</span>
+<span class="cp">#define AUTH_BIT_1 ( 1 &lt;&lt; 1 )</span>
+<span class="cp">#define RELAY_BIT_2 ( 1 &lt;&lt; 2 )</span>
+<span class="cp">#define TIMEOUT_BIT_3 ( 1 &lt;&lt; 3 )</span>
+<span class="cp">#define COLL_BIT_4 ( 1 &lt;&lt; 4 )</span>
+<span class="cp">#define ESTOPFIRE_BIT_5 ( 1 &lt;&lt; 5 )</span>
+<span class="cp">#define ESTOPCLEAR_BIT_6 ( 1 &lt;&lt; 6 )</span>
+<span class="cp">#define WIFIOUT_BIT_7 ( 1 &lt;&lt; 7 )</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>Not all of the EventBits are utilized to make state transitions but are set or cleared according to the state they are named for.</p>
+<p>The three main RTOS API calls used to interact with the Event bits are</p>
+<div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="n">xEventGroupClearBits</span><span class="p">(</span><span class="n">EventGroupHandle_t</span> <span class="n">xEventGroup</span><span class="p">,</span> <span class="k">const</span> <span class="n">EventBits_t</span> <span class="n">uxBitsToClear</span><span class="p">));</span> <span class="c1">// Clears specified bits</span>
+<span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="p">(</span><span class="n">CARD_BIT_0</span><span class="o">|</span><span class="n">AUTH_BIT_1</span><span class="p">));</span> <span class="c1">// Sets specified bits</span>
+<span class="n">EventBits_t</span> <span class="nf">xEventGroupWaitBits</span><span class="p">(</span><span class="k">const</span> <span class="n">EventGroupHandle_t</span> <span class="n">xEventGroup</span><span class="p">,</span><span class="k">const</span> <span class="n">EventBits_t</span> <span class="n">uxBitsToWaitFor</span><span class="p">,</span><span class="k">const</span> <span class="n">BaseType_t</span> <span class="n">xClearOnExit</span><span class="p">,</span><span class="k">const</span> <span class="n">BaseType_t</span> <span class="n">xWaitForAllBits</span><span class="p">,</span><span class="n">TickType_t</span> <span class="n">xTicksToWait</span><span class="p">);</span>
+</pre></div>
+</td></tr></table></div>
+<p>Line one shows xEventGroupClearBits as the definition while line 2 shows xEventGroupSetBits as an actual call (they expect the same parameters).</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><code class="docutils literal notranslate"><span class="pre">CARD_BIT_0|AUTH_BIT_1</span></code> are passed with <a href="#id3"><span class="problematic" id="id4">:underline:`bitwise OR`</span></a> because we are creating a bitmask to operator on the binary value contained within
+rfidStatesGroup.</p>
+</div>
+<p>Line 3 once again shows a formal definition. xEventGroupWaitBits is the call used to gate state transitions. It blocks a task (not the processor) until the specified bits
+are set. :underline: <cite>It cannot be used to check for being cleared</cite>.  Notice that it can be configured to block until both specified bits are set or either bit is set. Additionally
+it can clear the bits it checks on returning.</p>
 </div>
 </div>
 </div>
@@ -387,78 +523,57 @@ For the over the air updates functionality to be used our program must occupty &
 </div>
 
 
-            <div class="clearer"></div>
+           </div>
+           
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Firmware</a><ul>
-<li><a class="reference internal" href="#linear-vs-rtos-branches">Linear vs RTOS Branches</a></li>
-<li><a class="reference internal" href="#learning-rtos-on-the-esp32">Learning RTOS on the ESP32</a></li>
-<li><a class="reference internal" href="#tool-access-data-structures">Tool Access Data Structures</a></li>
-<li><a class="reference internal" href="#peripheral-interactions">Peripheral Interactions</a><ul>
-<li><a class="reference internal" href="#rfid-mfrc522-module">RFID - MFRC522 Module</a><ul>
-<li><a class="reference internal" href="#manufacturer-recommended-control-loop">Manufacturer Recommended Control Loop</a></li>
-<li><a class="reference internal" href="#control-loop-utilized-by-tool-access-project">Control Loop Utilized by Tool Access Project</a><ul>
-<li><a class="reference internal" href="#state-transitions-in-rtos">State Transitions in RTOS</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#com12999-addressable-leds">COM12999 - Addressable LEDs</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#mqtt">MQTT</a><ul>
-<li><a class="reference internal" href="#proposed-topic-structure">Proposed Topic Structure</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="PCBDesign.html" class="btn btn-neutral float-left" title="PCB Design" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="PCBDesign.html"
-                        title="previous chapter">PCB Design</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/Firmware.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>$('#searchbox').show(0);</script>
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Liam Brinston
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="PCBDesign.html" title="PCB Design"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Victoria Makerspace  documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Firmware</a></li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2020, Liam Brinston.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.0.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
 </html>

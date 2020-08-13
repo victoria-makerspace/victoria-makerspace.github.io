@@ -45,7 +45,7 @@ core for the ESP32 rides on top of is utilized in the RTOS branch for asynchrono
 rather than at the tool level where the card is read. MQTT is utilized for asynchronous communication with the authentication sever.</p>
 <div class="section" id="linear-vs-rtos-branches">
 <h2>Linear vs RTOS Branches<a class="headerlink" href="#linear-vs-rtos-branches" title="Permalink to this headline">¶</a></h2>
-<p>The firmware for the tool access project has two branches as of Aug 11, 2020: Linear and RTOS.</p>
+<p>The firmware for the tool access project has two branches as of Aug 12, 2020: Linear and RTOS.</p>
 <p>The linear branch is “standard” linear Arduino code. It can’t query a database and instead uses a hardcoded UID’s as a “stub” for authorization of cards.</p>
 <p>The RTOS branch utilizes the  RTOS running underneath the Arduino layer for more graceful task handling. The Arduino framework is still utilized to interact
 with peripherals but is wrapped in RTOS Tasks. This branch communicates with an MQTT broker via WiFi for authentication of RFID cards.</p>
@@ -212,7 +212,7 @@ help functions they may need to call.</p>
 </div>
 <div class="section" id="peripheral-interactions">
 <h2>Peripheral Interactions<a class="headerlink" href="#peripheral-interactions" title="Permalink to this headline">¶</a></h2>
-<p>As of Aug 11, 2020 the tool access system has a set list of peripherals:
+<p>As of Aug 12, 2020 the tool access system has a set list of peripherals:
 1. 2X COM12999 Addressable LEDs
 2. 1X MFRC522 RFID Module
 3. 1X Power relay and associated driver circuit</p>

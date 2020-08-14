@@ -35,7 +35,8 @@
 
     
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Firmware" href="Firmware.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -81,9 +82,17 @@
             
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="PCBDesign.html">PCB Design</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Firmware.html">Firmware</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">MFRC522 - A Primer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#purpose-of-this-document">Purpose of this document</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#card-detection">Card detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#card-presence">Card presence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#collisions">Collisions</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -151,6 +160,8 @@
             
   <div class="section" id="mfrc522-a-primer">
 <h1>MFRC522 - A Primer<a class="headerlink" href="#mfrc522-a-primer" title="Permalink to this headline">¶</a></h1>
+<p>Library: <a class="reference external" href="https://github.com/miguelbalboa/rfid#development">Miguelbalboa’s RFID for Arduino</a> This repo is currently frozen as it is not actively maintained as of 2019. It is however by far thee most frequently
+used Arduino library for RFID projects.</p>
 <p>Technical documentation:</p>
 <ol class="arabic simple">
 <li><p><a class="reference external" href="https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf">MFRC522 Datasheet</a></p></li>
@@ -168,7 +179,7 @@ on how the MFRC522 functions so far as it is relevant to this project.</p>
 </dd>
 <dt id="term-PCD">PCD</dt><dd><p>Proximity Coupling Device</p>
 </dd>
-<dt id="term-UID">UID</dt><dd><p>Unique IDentifier number set by factory on each PICC (bytes 0..6 of block 0) may be be 4-10 bytes.</p>
+<dt id="term-UID">UID</dt><dd><p>Unique IDentifier number set by factory on each PICC (bytes 0..6 of memory block 0) may be be 4-10 bytes.</p>
 </dd>
 <dt id="term-SAK">SAK</dt><dd><p>Select ACknowledge</p>
 </dd>
@@ -189,26 +200,126 @@ on how the MFRC522 functions so far as it is relevant to this project.</p>
 </dl>
 </div>
 </div>
-<div class="section" id="manufacturer-recommended-control-loop">
-<h2>Manufacturer Recommended Control Loop<a class="headerlink" href="#manufacturer-recommended-control-loop" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="card-detection">
+<h2>Card detection<a class="headerlink" href="#card-detection" title="Permalink to this headline">¶</a></h2>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="_images/NPXPolling.png"><img alt="_images/NPXPolling.png" src="_images/NPXPolling.png" style="width: 50%;" /></a>
 </div>
 <p>Card polling block diagram from <a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a> (Pg 5).</p>
-<p>THe MFRC522 polls for cards according to the diagram above. The RF field is switched on, if a card is present the RF field will provide power to the PICC which boots
-into an Idle state (5ms delay required for boot of PICC). The MFRC522 then sends out a REQA/B command (A/B are two different variants of the same command). If a PICC
-is present and in state Idle it will respond to a REQA with an ATQA. The MFRC522 may then proceed to activate that card and preform a transaction. For our purposes that
-transaction is the extraction of the UID.</p>
-<div class="figure align-center">
-<img alt="_images/NPXselection.png" src="_images/NPXselection.png" />
+<p>The MFRC522 polls for cards according to the diagram above. The RF field is switched on, if a card is present the RF field will provide power to the PICC which boots
+into an <em>Idle</em> state. The MFRC522 then sends out a REQA/B command (A/B are two different variants of the same command) which invites a PICC to enter state <em>Active</em>.
+If a PICC is present it will enter state <em>Active</em> and it will respond to the REQA with an ATQA.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Only <em>Active</em> or <em>Idle</em> PICC’s will respond to an ATQA. The functions <code class="docutils literal notranslate"><span class="pre">mfrc522.PICC_IsNewCardPresent()</span></code> and <code class="docutils literal notranslate"><span class="pre">mfrc522.PICC_RequesA()</span></code> send out this REQA.
+State <em>Halt</em> will not responded to an REQA but must first be invited to state <em>Active</em> via a WUPA which is executed but the function <code class="docutils literal notranslate"><span class="pre">mfrc522.PICC_WakeupA()</span></code></p>
 </div>
-<p>Card selection block diagram (without MAD - MIFARE Multiple Application Directory) from <a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a> (Pg 10). N = # of cards in RF field. Reactivate halted cards via WUPA (Wake Up Command).</p>
-<p>Although represented in a slightly confusing manner the control flow diagrams provided by NPX (see above) layout how to interact with the RFID hardware.</p>
-<ol class="arabic simple">
-<li><p>We poll for new cards. This is done by the MFRC522 broadcasts an REQA/B command. If a card is present in the RF field (and has had 5ms to boot) it will respond with a ATQA/B command.</p></li>
-<li><p>We proceed to authenticating the card. This is where the UID is read.</p></li>
-<li><p>If a collision occurs (ie. &gt;1 card in the RF field).</p></li>
-</ol>
+<p>Upon receipt of a STATUS_OKAY from an ATQA the MFRC522 may then proceed to activate that card and preform a transaction. For our purposes that transaction is the extraction
+of the UID which occurs during card selection. Card selection is carried out by <code class="docutils literal notranslate"><span class="pre">mfrc522.PICC_ReadCardSerial()</span></code> which if successful places the extracted UID in it’s class variable
+<code class="docutils literal notranslate"><span class="pre">mfrc522.uid.uidByte</span></code> along with <code class="docutils literal notranslate"><span class="pre">mfrc522.uid.size</span></code>.</p>
+<p>Both detection of a new card and reading of that cards uid can be preformed with a single conditional card to form a polling routine.</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Card polling routine</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Some means of non-blocking delay here</span>
+<span class="k">if</span><span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">PICC_IsNewCardPresent</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">mfrc522</span><span class="p">.</span><span class="n">ReadCardSerial</span><span class="p">(){</span>
+   <span class="c1">// mfrc522.PICC_IsNewCardPresent() - Returns 1 if StatusCode result == STATUS_OKAY || STATUS_COLLISION</span>
+   <span class="c1">// mfrc522.ReadCardSerial() - Returns 1 if that card&#39;s uid can be read</span>
+
+
+   <span class="c1">// Execute code to initiate state transition</span>
+
+   <span class="c1">// Extract uid from mfrc522 class variable</span>
+   <span class="n">mfrc522</span><span class="p">.</span><span class="n">PICC_HaltA</span><span class="p">();</span> <span class="c1">// This call must be must be made to prevent repeated re-detection of our card</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="card-presence">
+<h2>Card presence<a class="headerlink" href="#card-presence" title="Permalink to this headline">¶</a></h2>
+<p>The minimum viable product for this project calls for (in most use cases) the end user to leave their access card in contact with the tool access system for access to that tool to persist. This necessitates
+that our system has some means of detecting the continued presence of an already authorized card. This functionality is already implied in the control loop described above.</p>
+<p>Only <em>Active</em> or <em>Idle</em> cards will respond to an REQA command and <em>Halted</em> cards will not.
+Only <em>Halted</em> cards will respond to a WUPA command and <em>Active</em> or <em>Idle</em> cards will not.</p>
+<p>This provides a very simple cards persistance polling routine where we simply need to execute a WUPA command.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Card Presence Polling Routine</span><a class="headerlink" href="#id3" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">pollPres</span><span class="p">(){</span>
+
+<span class="c1">// Declare buffer for the STATUS_CODE returned in the ATQA buffer</span>
+<span class="n">byte</span> <span class="n">bufferATQA</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="n">byte</span> <span class="n">bufferSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">bufferATQA</span><span class="p">);</span>
+
+
+<span class="c1">// Reset baud rates</span>
+     <span class="n">mfrc522</span><span class="p">.</span><span class="n">PCD_WriteRegister</span><span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">TxModeReg</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">);</span>
+     <span class="n">mfrc522</span><span class="p">.</span><span class="n">PCD_WriteRegister</span><span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">RxModeReg</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">);</span>
+     <span class="c1">// Reset ModWidthReg</span>
+     <span class="n">mfrc522</span><span class="p">.</span><span class="n">PCD_WriteRegister</span><span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">ModWidthReg</span><span class="p">,</span> <span class="mh">0x26</span><span class="p">);</span>
+
+   <span class="k">if</span><span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">PICC_WakeupA</span><span class="p">(</span><span class="n">bufferATQA</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bufferSize</span><span class="p">)){</span>
+
+      <span class="c1">// A halted card has responded to WUPA therefore our card is still there</span>
+
+      <span class="n">mfrc522</span><span class="p">.</span><span class="n">PICC_HaltA</span><span class="p">();</span> <span class="c1">// We must re-halt it now that we&#39;ve woken it up</span>
+   <span class="p">}</span>
+   <span class="k">else</span><span class="p">{</span>
+      <span class="c1">// No response to WUPA our card must have left</span>
+      <span class="c1">// Our state has changed to noCard</span>
+      <span class="c1">// Execute code to change state</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>The above example is not a 1:1 representation of the <code class="docutils literal notranslate"><span class="pre">pollPres()</span></code> function found in <code class="docutils literal notranslate"><span class="pre">tollAccessRTOS.cpp</span></code>. Code from initiation state changes and interacting with the LEDs have been omitted for clarity.</p>
+</div>
+<div class="section" id="collisions">
+<h2>Collisions<a class="headerlink" href="#collisions" title="Permalink to this headline">¶</a></h2>
+<p>But what if there is more than one card present in the RF field (a collision)? The MFRC522 can detect if a collision has occurred and has an anti-collision process to ensure only one card is read at a time.
+Other colliding cards must wait for subsequent REQA commands to be read. The MFRC522 also throws an error code to indicate that a collision has occurred. This error code (<code class="docutils literal notranslate"><span class="pre">STATUS_COLLISION</span></code>) should be
+returned in the ATQA buffer received by our ESP32 as a result of the <code class="docutils literal notranslate"><span class="pre">mfrc522.PICC_IsNewCardPresent()</span></code> call used in our polling routine.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>In practice this does not occur. In the event of a collision <code class="docutils literal notranslate"><span class="pre">mfrc522.PICC_IsNewCardPresent()</span></code> returns a 0 because it received a <code class="docutils literal notranslate"><span class="pre">STATUS_TIMEOUT</span></code>. This behaviour also occurs in response to the
+<code class="docutils literal notranslate"><span class="pre">PICC_WakeupA()</span></code>.</p>
+</div>
+<p>This is a major problem because collisions result in the return of the same status code (<code class="docutils literal notranslate"><span class="pre">STATUS_TIMEOUT</span></code>) that we expect when our card is removed. Additionally it can create false negatives
+for detection of new cards and doesn’t leave us with a reliable means of detecting collisions.</p>
+<p>This behaviour is noted both the commenting of MiguelBalBoa’s library and in Mario Capurso’s write up. In both cases poor antenna design is purposed as the case however it is beyond my capabilities
+to lend credence this hypothesis however the MFRC522 modules themselves do appear to have a QC issue with 15 out of 35 of those ordered initially for this project being unable to communicate with
+my test setup.</p>
+<p>Once again the solution to our issue is hidden in the datasheet only this time it is unclear to the author if this is a deliberate feature or merely a byproduct of the protocol that simply happens to
+be a serviceable means of detecting a collision.</p>
+<p>The anticollision routine carried out by the MFRC522 ensures that one card is read per REQA command. The colliding card/cards must wait for addition REQA commands to be sent before they can be read.</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Collision Polling detection</span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">collPolling</span><span class="p">(){</span>
+   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">){</span>
+
+      <span class="k">if</span> <span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">PICC_IsNewCardPresent</span><span class="p">()){</span> <span class="c1">// Any more than 1 and we have a collision or a misaligned card</span>
+      <span class="c1">//inc counter</span>
+      <span class="p">(</span><span class="n">progParams</span><span class="o">-&gt;</span><span class="n">card</span><span class="p">.</span><span class="n">collCounter</span><span class="p">)</span><span class="o">++</span><span class="p">;</span>
+     <span class="p">}</span>
+     <span class="k">else</span><span class="p">{</span>
+      <span class="c1">// Do nothing</span>
+     <span class="p">}</span>
+   <span class="p">}</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">progParams</span><span class="o">-&gt;</span><span class="n">card</span><span class="p">.</span><span class="n">collCounter</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">){</span>
+      <span class="c1">// We have a collision</span>
+      <span class="c1">// GOTO state TIMEOUT</span>
+   <span class="p">}</span>
+   <span class="k">else</span><span class="p">{</span> <span class="c1">// No collision</span>
+      <span class="c1">// No collision</span>
+
+
+      <span class="c1">//xEventGroupClearBits(*rfidStatesGroup, COLL_BIT_4); // We can revoke the collision flag if it was previously set because the offending card has been removed</span>
+   <span class="p">}</span>
+   <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">card</span><span class="p">.</span><span class="n">collCounter</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Reset the collision counter</span>
+   <span class="p">}</span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 
@@ -217,6 +328,13 @@ transaction is the extraction of the UID.</p>
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="Firmware.html" class="btn btn-neutral float-left" title="Firmware" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>

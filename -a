@@ -1,0 +1,128 @@
+[33mcommit 053eb7232c226d03a8e50579c4c88c4cc3cbcc5b[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Liam Brinston <brinston@ualberta.ca>
+Date:   Thu Aug 13 16:10:41 2020 -0700
+
+    Added pages for Intro, MFRC522, and changed theme to rtd
+
+[33mcommit f6f0bd691152724ab245ece146ccb69dda24f464[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Wed Aug 12 20:50:44 2020 -0700
+
+    Fix merge conflict.
+
+[33mcommit 141f2d3772185fc36dcf1e105b32aa90eb0c518e[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Wed Aug 12 20:10:01 2020 -0700
+
+    Update build to use Sphinx 3.2.0 instead of 1.8.5
+
+[33mcommit 85d293db85a2347f9edc057540811957786f212d[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Wed Aug 12 20:05:34 2020 -0700
+
+    Fix .gitignore syntax
+
+[33mcommit 594c17f0ca0d52af7bafe110b716168f65e7c3e9[m
+Author: Liam Brinston <brinston@ualberta.ca>
+Date:   Wed Aug 12 13:58:01 2020 -0700
+
+    Revolved Sphinx error "...contents.rst not found" by designating master_doc = index.rst in conf.py
+
+[33mcommit 28e0b1cc1fb1cc8a16666fc5950c823921b40881[m
+Author: no no no <nobody@nowhere.now>
+Date:   Wed Aug 12 13:45:24 2020 -0700
+
+    Corrected .gitignore to ./docs/.doctrees/
+
+[33mcommit 090dba9c698aad4599fce16494da5db6b0f54776[m
+Author: no no no <nobody@nowhere.now>
+Date:   Wed Aug 12 13:23:53 2020 -0700
+
+    adding build/.doctree to .gitignore
+
+[33mcommit 1266c2eb06954f92ee38c48696df3bd6293726e4[m
+Author: no no no <nobody@nowhere.now>
+Date:   Tue Aug 11 19:51:23 2020 -0700
+
+    asdf
+
+[33mcommit e6d9bae9815cd56758e5536e775f346f90416a45[m
+Author: LBrinston <brinston@ualberta.ca>
+Date:   Tue Aug 11 18:03:53 2020 -0700
+
+    Added Firmware.rst, still needs lots of work. Formatting and replacing images.
+
+[33mcommit 3c69661339a7fb3350b93163d97efd7c7f7074a7[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Tue Aug 11 17:41:27 2020 -0700
+
+    Update build
+
+[33mcommit 265ddce5d24d8456db3f36c5910f036ef5d04e2a[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Tue Aug 11 17:36:05 2020 -0700
+
+    Add .nojekyll back to BUILDDIR
+    
+    Forgot I removed it when I moved /build to /docs
+
+[33mcommit 14e2babe14fa7f062f5be14f5c11d8e298f2f56f[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Tue Aug 11 17:26:54 2020 -0700
+
+    Update Makefile to set BUILDDIR to /docs
+
+[33mcommit 9b87edc966a083bd6861a4c1f1e207615a31c6e4[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Tue Aug 11 17:24:59 2020 -0700
+
+    Overwrite /docs directory with /build
+
+[33mcommit 190e9c4b86af3b2f911e166fe94d2988dcdde883[m
+Author: LBrinston <brinston@ualberta.ca>
+Date:   Tue Aug 11 07:56:41 2020 -0700
+
+    Added build folder contain html files to repo. Only contains PCBDesign page atm.
+    Still requires inheritance tree for eeScheema and PCBNew files.
+
+[33mcommit c57bed0a1eed20a92de4b5a0cd07ea948e49a08a[m
+Author: LBrinston <brinston@ualberta.ca>
+Date:   Mon Aug 10 22:01:33 2020 -0700
+
+    Created PCBDesign page. Still needs explanation of revision inheritance between eeSchema and PCBNew files.
+
+[33mcommit 8c90cfcd2e4923844aa3c388ec0b23b50d2db020[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Sat Aug 8 13:35:53 2020 -0700
+
+    Move build folder to match GitHub Pages config
+
+[33mcommit 0cff7ff9c0ff678ae2a44adb8e6edcf6e2e39d8f[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Sat Aug 8 13:33:22 2020 -0700
+
+    Build output
+
+[33mcommit 10ee10542155538fbce0c75f9e255ed86443a584[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Sat Aug 8 13:31:25 2020 -0700
+
+    Update default target
+
+[33mcommit 5508e5c0b6650dd85eb01fbde60687803a754248[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Sat Aug 8 13:18:52 2020 -0700
+
+    Ran sphinx-quickstart
+
+[33mcommit 51bab0cafc5de2d1468ee968507ab930cd225ead[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Sat Aug 8 12:50:28 2020 -0700
+
+    Install Sphinx using Pipenv
+
+[33mcommit b2f1ee80b6a3b450b6eaaa1ca7049522fe4ce976[m
+Author: Victor van Poppelen <vvanpo@gmail.com>
+Date:   Sat Aug 8 12:33:01 2020 -0700
+
+    init

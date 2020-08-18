@@ -89,10 +89,12 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Firmware</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#linear-vs-rtos-branches">Linear vs RTOS Branches</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#learning-rtos-on-the-esp32">Learning RTOS on the ESP32</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tool-access-configuration-and-initialization">Tool Access Configuration and Initialization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tool-access-data-structures">Tool Access Data Structures</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#peripheral-interactions">Peripheral Interactions</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#rfid-mfrc522-module">RFID - MFRC522 Module</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#control-loop-utilized-by-tool-access-project">Control Loop Utilized by Tool Access Project</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#state-transitions-in-rtos">State Transitions in RTOS</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#com12999-addressable-leds">COM12999 - Addressable LEDs</a></li>
@@ -100,6 +102,16 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#mqtt">MQTT</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#proposed-topic-structure">Proposed Topic Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mqtt-functions">MQTT functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#roadmap-to-further-development">Roadmap to Further Development</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#optimization">Optimization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#interrupt-functionality-of-the-mfrc522-module">Interrupt functionality of the MFRC522 module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#shrinking-program-size-for-ota">Shrinking program size for OTA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#desired-future-features">Desired Future Features</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -177,7 +189,7 @@ core for the ESP32 rides on top of is utilized in the RTOS branch for asynchrono
 rather than at the tool level where the card is read. MQTT is utilized for asynchronous communication with the authentication sever.</p>
 <div class="section" id="linear-vs-rtos-branches">
 <h2>Linear vs RTOS Branches<a class="headerlink" href="#linear-vs-rtos-branches" title="Permalink to this headline">¶</a></h2>
-<p>The firmware for the tool access project has two branches as of Aug 13, 2020: Linear and RTOS.</p>
+<p>The firmware for the tool access project has two branches as of Aug 17, 2020: Linear and RTOS.</p>
 <p>The linear branch is “standard” linear Arduino code. It can’t query a database and instead uses a hardcoded UID’s as a “stub” for authorization of cards.</p>
 <p>The RTOS branch utilizes the  RTOS running underneath the Arduino layer for more graceful task handling. The Arduino framework is still utilized to interact
 with peripherals but is wrapped in RTOS Tasks. This branch communicates with an MQTT broker via WiFi for authentication of RFID cards.</p>
@@ -196,13 +208,18 @@ with peripherals but is wrapped in RTOS Tasks. This branch communicates with an 
 There are differences in how the two are implemented.</p>
 </div>
 </div>
+<div class="section" id="tool-access-configuration-and-initialization">
+<h2>Tool Access Configuration and Initialization<a class="headerlink" href="#tool-access-configuration-and-initialization" title="Permalink to this headline">¶</a></h2>
+<p>All hardware pin assignments, timer periods, MQTT IP addresses, etc can be found in the <code class="docutils literal notranslate"><span class="pre">toolAccessRTOS.h</span></code> and <code class="docutils literal notranslate"><span class="pre">toolAccessLinear.h</span></code> respectively. All assignments are made via defines.</p>
+<p>All timing periods in the <code class="docutils literal notranslate"><span class="pre">toolAccessRTOS.h</span></code> are made as a wrap of the <code class="docutils literal notranslate"><span class="pre">pdMS_TO_TICKS(period_ms)</span></code> RTOS macro which converts a desired period expressed in milliseconds to RTOS ticks.</p>
+</div>
 <div class="section" id="tool-access-data-structures">
 <h2>Tool Access Data Structures<a class="headerlink" href="#tool-access-data-structures" title="Permalink to this headline">¶</a></h2>
 <p>One of the constraints of working with RTOS is that tasks cannot be passed any number of variables like a regular function. Instead they take a single void point (void <a href="#id1"><span class="problematic" id="id2">*</span></a>).
 RTOS has a number of tools for passing data between tasks such as queues, stream, and message buffers. Instead of using these more complex tools the Tool Access Firmware
 simply passes the address of nested structures via the void pointer at task creation. This allows for the tasks to continue passing down the struct pointer to
 help functions they may need to call.</p>
-<p>These nested structures are described in <code class="docutils literal notranslate"><span class="pre">`toolAccessRTOS.h`</span></code></p>
+<p>These nested structures are defined in <code class="docutils literal notranslate"><span class="pre">`toolAccessRTOS.h`</span></code></p>
 <div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
  3
@@ -381,9 +398,9 @@ careful removal of the authorized card.</p></li>
 <li><p><em>timingOut</em> - In this state a timer is run down because either a collision has occurred or a card has been removed. This state can be exited by introducing
 a new card to reader or on expiration of the timer. Therefore we may think of it as occurring concurrently with the no cards present state.</p></li>
 </ol>
-<div class="figure align-center" id="id5">
+<div class="figure align-center" id="id3">
 <img alt="State diagram for MFRC522 Hardware" src="_images/toolAccessStates.png" />
-<p class="caption"><span class="caption-text">All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally. Authorization step omitted for clarity.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+<p class="caption"><span class="caption-text">All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally. Authorization step omitted for clarity.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </div>
 <p>This state diagram holds true for both the Linear and the RTOS branches of the code. The states and state transitions are simply handled differently. In the linear
 branches the states are tracked via boolean flag variables and transitions are made via conditional checks against those flags. In the RTOS branch this is done via
@@ -391,15 +408,16 @@ EventGroups.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The unconditional transition from the Collision state to the timingOut state is necessary due to the MFRC522 modules returning TIMEOUT status codes instead of
-COLLISION status code in the event of a collision. This does not prevent us from detect collisions but rather detecting how a collision is resolve.
-Therefore the decision was made to push all collisions to the timingOut state.</p>
+COLLISION status code in the event of a collision. This does not prevent us from detect collisions but rather detecting how a collision is resolved.
+See MFRC522 primer for more detail.</p>
+</div>
 </div>
 <div class="section" id="state-transitions-in-rtos">
-<h5>State Transitions in RTOS<a class="headerlink" href="#state-transitions-in-rtos" title="Permalink to this headline">¶</a></h5>
+<h4>State Transitions in RTOS<a class="headerlink" href="#state-transitions-in-rtos" title="Permalink to this headline">¶</a></h4>
 <p>In the RTOS branch of the code states are tracked via the EventBits contained within the EventGroup <code class="docutils literal notranslate"><span class="pre">rfidStatesGroup</span></code>. The EventBits are interacted with via RTOS API calls
 and macros defined in <code class="docutils literal notranslate"><span class="pre">toolAccessRTOS.h</span></code>.</p>
-<div class="literal-block-wrapper docutils container" id="id6">
-<div class="code-block-caption"><span class="caption-text">EventBit macros found in <code class="docutils literal notranslate"><span class="pre">toolAccessRTOS.h</span></code></span><a class="headerlink" href="#id6" title="Permalink to this code">¶</a></div>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">EventBit macros found in <code class="docutils literal notranslate"><span class="pre">toolAccessRTOS.h</span></code></span><a class="headerlink" href="#id4" title="Permalink to this code">¶</a></div>
 <div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
 2
 3
@@ -424,32 +442,213 @@ and macros defined in <code class="docutils literal notranslate"><span class="pr
 <p>The three main RTOS API calls used to interact with the Event bits are</p>
 <div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
 2
-3</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="n">xEventGroupClearBits</span><span class="p">(</span><span class="n">EventGroupHandle_t</span> <span class="n">xEventGroup</span><span class="p">,</span> <span class="k">const</span> <span class="n">EventBits_t</span> <span class="n">uxBitsToClear</span><span class="p">));</span> <span class="c1">// Clears specified bits</span>
+3
+4</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="n">xEventGroupClearBits</span><span class="p">(</span><span class="n">EventGroupHandle_t</span> <span class="n">xEventGroup</span><span class="p">,</span> <span class="k">const</span> <span class="n">EventBits_t</span> <span class="n">uxBitsToClear</span><span class="p">));</span> <span class="c1">// Clears specified bits</span>
 <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="p">(</span><span class="n">CARD_BIT_0</span><span class="o">|</span><span class="n">AUTH_BIT_1</span><span class="p">));</span> <span class="c1">// Sets specified bits</span>
 <span class="n">EventBits_t</span> <span class="nf">xEventGroupWaitBits</span><span class="p">(</span><span class="k">const</span> <span class="n">EventGroupHandle_t</span> <span class="n">xEventGroup</span><span class="p">,</span><span class="k">const</span> <span class="n">EventBits_t</span> <span class="n">uxBitsToWaitFor</span><span class="p">,</span><span class="k">const</span> <span class="n">BaseType_t</span> <span class="n">xClearOnExit</span><span class="p">,</span><span class="k">const</span> <span class="n">BaseType_t</span> <span class="n">xWaitForAllBits</span><span class="p">,</span><span class="n">TickType_t</span> <span class="n">xTicksToWait</span><span class="p">);</span>
+<span class="n">xEventGroupGetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">);</span> <span class="c1">// Checks value held in rfidStatesGroup</span>
 </pre></div>
 </td></tr></table></div>
 <p>Line one shows xEventGroupClearBits as the definition while line 2 shows xEventGroupSetBits as an actual call (they expect the same parameters).</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-<p><code class="docutils literal notranslate"><span class="pre">CARD_BIT_0|AUTH_BIT_1</span></code> are passed with <a href="#id3"><span class="problematic" id="id4">:underline:`bitwise OR`</span></a> because we are creating a bitmask to operator on the binary value contained within
+<p><code class="docutils literal notranslate"><span class="pre">CARD_BIT_0|AUTH_BIT_1</span></code> are passed with <strong>bitwise OR</strong> because we are creating a bitmask as an operator on the binary value contained within
 rfidStatesGroup.</p>
 </div>
 <p>Line 3 once again shows a formal definition. xEventGroupWaitBits is the call used to gate state transitions. It blocks a task (not the processor) until the specified bits
-are set. :underline: <cite>It cannot be used to check for being cleared</cite>.  Notice that it can be configured to block until both specified bits are set or either bit is set. Additionally
+are set. It cannot be used to check for being cleared.  Notice that it can be configured to block until both specified bits are set or either bit is set. Additionally
 it can clear the bits it checks on returning.</p>
+<p>Line 4 shows how the value held in an EventGroup could be checked if a conditional operation needs to be done outside of the RTOS API calls such as <code class="docutils literal notranslate"><span class="pre">xEventGroupWaitBits</span></code>.</p>
+<p>RTOS Task List</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Polling for New Cards</span><a class="headerlink" href="#id5" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">pollNewTask</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">params</span><span class="p">){</span>
+   <span class="n">metaStruct</span> <span class="o">*</span><span class="n">progParams</span> <span class="o">=</span> <span class="p">(</span><span class="n">metaStruct</span><span class="o">*</span><span class="p">)</span> <span class="n">params</span><span class="p">;</span>
+
+   <span class="k">for</span><span class="p">(;;){</span>
+      <span class="n">vTaskDelay</span><span class="p">(</span><span class="n">MS_POLL_TIMER_PERIOD</span><span class="p">);</span> <span class="c1">// Wait for at least he polling time</span>
+
+      <span class="k">if</span> <span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">PICC_IsNewCardPresent</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">mfrc522</span><span class="p">.</span><span class="n">PICC_ReadCardSerial</span> <span class="p">()){</span> <span class="c1">// Poll for new cards BUT only when CARD_BIT_0 is not set</span>
+
+         <span class="n">mfrc522</span><span class="p">.</span><span class="n">PICC_HaltA</span><span class="p">();</span> <span class="c1">// We have read the card now be halt it</span>
+         <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">CARD_BIT_0</span><span class="p">);</span>                     <span class="c1">// Now that we have detected a card set CARD_BIT_0 to unblock some Tasks</span>
+
+         <span class="c1">// We need to check if the card&#39;s UID is authorized</span>
+
+         <span class="c1">// First, check if to make sure the WiFi outtage flag hasn&#39;t been thrown</span>
+         <span class="k">if</span><span class="p">(</span><span class="n">xEventGroupGetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">)</span> <span class="o">==</span> <span class="mi">129</span><span class="p">){</span> <span class="c1">// If the WiFi is out simply grant access and log</span>
+
+             <span class="c1">// May still be useful for SPIFFS as storing a byte or int is more space efficient than a string. We can convert come re-connect to server</span>
+             <span class="n">userID</span><span class="p">(</span><span class="n">progParams</span><span class="p">,</span> <span class="n">mfrc522</span><span class="p">.</span><span class="n">uid</span><span class="p">.</span><span class="n">uidByte</span><span class="p">,</span> <span class="n">mfrc522</span><span class="p">.</span><span class="n">uid</span><span class="p">.</span><span class="n">size</span><span class="p">);</span> <span class="c1">// Move UID from struct to our own buffer</span>
+             <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;WiFi is out&quot;</span><span class="p">);</span>
+             <span class="n">writeLog</span><span class="p">(</span><span class="n">progParams</span><span class="p">);</span>
+             <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">AUTH_BIT_1</span><span class="p">);</span>  <span class="c1">// Grant access unconditionally because WiFi is out</span>
+         <span class="p">}</span>
+
+      <span class="k">else</span><span class="p">{</span> <span class="c1">// If the Wifi isn&#39;t out ask server for authorization</span>
+         <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">card</span><span class="p">.</span><span class="n">uidStrLen</span> <span class="o">=</span> <span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">uid</span><span class="p">.</span><span class="n">size</span><span class="o">*</span><span class="mi">3</span><span class="p">);</span> <span class="c1">// Our string length will be 3x the length the equivalent byte value</span>
+         <span class="n">byteToHexStr</span><span class="p">(</span><span class="n">mfrc522</span><span class="p">.</span><span class="n">uid</span><span class="p">.</span><span class="n">uidByte</span><span class="p">,</span> <span class="n">mfrc522</span><span class="p">.</span><span class="n">uid</span><span class="p">.</span><span class="n">size</span><span class="p">,</span> <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">card</span><span class="p">.</span><span class="n">uidStr</span><span class="p">,</span> <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">card</span><span class="p">.</span><span class="n">uidStrLen</span><span class="p">);</span> <span class="c1">// Now convert the byte in the mfrc522 struct to a string and dump it into our struct string</span>
+
+         <span class="c1">// Publish our uid string to find out if its authorized</span>
+         <span class="kt">uint16_t</span> <span class="n">packetIdPub1</span> <span class="o">=</span> <span class="n">mqttClient</span><span class="p">.</span><span class="n">publish</span><span class="p">(</span><span class="s">&quot;rfid/auth/req&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">false</span><span class="p">,</span> <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">card</span><span class="p">.</span><span class="n">uidStr</span><span class="p">);</span> <span class="c1">// Publish the read UID to rfid/auth/req. BE VERY CAREFUL TO NOT SET THE RETAIN FLAG</span>
+         <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;Publishing at QoS 1, packetId: &quot;</span><span class="p">);</span>
+         <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">packetIdPub1</span><span class="p">);</span>
+       <span class="p">}</span>
+      <span class="c1">// Now suspend our polling task until we hear back from MQTT broker OR if WiFi is out proceed with the request of the RFID control loop</span>
+      <span class="n">vTaskSuspend</span> <span class="p">(</span> <span class="nb">NULL</span> <span class="p">);</span> <span class="c1">// Suspend ourselves. No need to keep polling now that there is a card</span>
+    <span class="p">}</span>
+
+    <span class="k">else</span> <span class="p">{</span>
+      <span class="c1">// No new card, keep polling for new cards</span>
+      <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;EventBits:&quot;</span><span class="p">);</span>
+     <span class="p">}</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">pollNewTask()</span></code> is the entry point for the RFID control loop. Once it detects a new card it suspends itself. It is very important it is resumed at the appropriate places for the control loop to keep
+functioning (ie. whenever we return to state noCard). However, this also means that we can disable this task as a means of suspending the RFID functionality, see the EstopFire and EstopClear tasks for
+more details.</p>
+<p>When WiFi/MQTT is connect only CARD_BIT_0 is set in <code class="docutils literal notranslate"><span class="pre">pollNewTask()</span></code>
+When connectivity to WiFi/MQTT cannot be establish both CARD_BIT_0 and AUTH_BIT_1 are set within this function.</p>
 </div>
 </div>
 <div class="section" id="com12999-addressable-leds">
 <h3>COM12999 - Addressable LEDs<a class="headerlink" href="#com12999-addressable-leds" title="Permalink to this headline">¶</a></h3>
+<p>Control of the COM12999 addressable LEDs is done via the FastLED library, a single RTOS task definition <code class="docutils literal notranslate"><span class="pre">blinkyLEDTask</span></code>.</p>
 <p>Library : <a class="reference external" href="https://github.com/FastLED/FastLED">FastLED</a></p>
 <p>blinky LED Task</p>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">blinky LED Task</span><a class="headerlink" href="#id6" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">blinkyLED</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">params</span><span class="p">){</span>
+
+   <span class="n">LEDParams</span> <span class="o">*</span><span class="n">l</span> <span class="o">=</span> <span class="p">(</span><span class="n">LEDParams</span><span class="o">*</span><span class="p">)</span><span class="n">params</span><span class="p">;</span> <span class="c1">// Dumping our struct parameters into task instance of LEDParams via casting of void *params to LEDParams</span>
+
+
+   <span class="k">for</span> <span class="p">(;;){</span> <span class="c1">// Infinite loop required for RTOS tasks b/c if allowed to return they would delete</span>
+
+      <span class="c1">// Branch based on blink status</span>
+      <span class="k">if</span><span class="p">(</span><span class="n">l</span><span class="o">-&gt;</span><span class="n">blink</span><span class="p">){</span>                             <span class="c1">// if blink flag has been set</span>
+         <span class="n">leds</span><span class="p">[</span><span class="n">l</span><span class="o">-&gt;</span><span class="n">led</span><span class="p">]</span> <span class="o">=</span> <span class="n">CRGB</span><span class="o">::</span><span class="n">Black</span><span class="p">;</span>            <span class="c1">// Set LED specified in passed params to OFF state</span>
+         <span class="n">FastLED</span><span class="p">.</span><span class="n">show</span><span class="p">();</span>                        <span class="c1">// Toggle the LED state to new</span>
+         <span class="n">vTaskDelay</span><span class="p">(</span><span class="n">pdMS_TO_TICKS</span><span class="p">(</span><span class="n">l</span><span class="o">-&gt;</span><span class="n">time</span><span class="p">));</span>    <span class="c1">// RTOS delay blocks task not processor</span>
+
+         <span class="n">leds</span><span class="p">[</span><span class="n">l</span><span class="o">-&gt;</span><span class="n">led</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="o">-&gt;</span><span class="n">myColour</span><span class="p">;</span>            <span class="c1">// Set LED specified in passed params to the colour specified in same passed params</span>
+         <span class="n">FastLED</span><span class="p">.</span><span class="n">show</span><span class="p">();</span>
+         <span class="n">vTaskDelay</span><span class="p">(</span><span class="n">pdMS_TO_TICKS</span><span class="p">(</span><span class="n">l</span><span class="o">-&gt;</span><span class="n">time</span><span class="p">));</span>   <span class="c1">// Set delay time according to passed param AND div by port TICK period ms</span>
+      <span class="p">}</span>
+      <span class="k">else</span><span class="p">{</span>
+         <span class="n">leds</span><span class="p">[</span><span class="n">l</span><span class="o">-&gt;</span><span class="n">led</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="o">-&gt;</span><span class="n">myColour</span><span class="p">;</span>            <span class="c1">// Set LED specified in passed params to the colour specified in same passed params</span>
+         <span class="n">FastLED</span><span class="p">.</span><span class="n">show</span><span class="p">();</span>                        <span class="c1">// Show it</span>
+         <span class="n">vTaskSuspend</span> <span class="p">(</span> <span class="nb">NULL</span> <span class="p">);</span>                 <span class="c1">// Suspend ourselves since blink = false therefore the task need not keep running</span>
+      <span class="p">}</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<p>Where the LED control tasks differ slightly from the other RTOS tasks is at creation they are passed the address of their parameter struct rather than the address of the metaStruct. The LED tasks
+need only access to the LED parameters while other tasks needs access to their own parameters and the LED parameters.</p>
+<div class="literal-block-wrapper docutils container" id="id7">
+<div class="code-block-caption"><span class="caption-text">LED Task Creation in void setup ()</span><a class="headerlink" href="#id7" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//Task creation</span>
+<span class="n">xTaskCreatePinnedToCore</span><span class="p">(</span><span class="n">blinkyLED</span><span class="p">,</span> <span class="s">&quot;blinkLED&quot;</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">progParams</span><span class="p">.</span><span class="n">LEDParams0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">blinkLEDHandle0</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">xTaskCreatePinnedToCore</span><span class="p">(</span><span class="n">blinkyLED</span><span class="p">,</span> <span class="s">&quot;blinkLED1&quot;</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">progParams</span><span class="p">.</span><span class="n">LEDParams1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">blinkLEDHandle1</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<p>Manipulation of the LEDs can then be achieve simply by changing the values held in <code class="docutils literal notranslate"><span class="pre">LEDParams0</span></code> and <code class="docutils literal notranslate"><span class="pre">LEDParams1</span></code> via the void pointer.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the previous state of an LED was <code class="docutils literal notranslate"><span class="pre">blink</span> <span class="pre">==</span> <span class="pre">0</span></code> then its respective LEDTask will have to be resumed.</p>
+</div>
+<div class="literal-block-wrapper docutils container" id="id8">
+<div class="code-block-caption"><span class="caption-text">Example LED manipulation</span><a class="headerlink" href="#id8" title="Permalink to this code">¶</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">exampleTask</span> <span class="p">(</span><span class="n">void</span> <span class="o">*</span><span class="n">params</span><span class="p">){</span>
+<span class="n">metaStruct</span> <span class="o">*</span><span class="n">progParams</span> <span class="o">=</span> <span class="p">(</span><span class="n">metaStruct</span><span class="o">*</span><span class="p">)</span> <span class="n">params</span><span class="p">;</span>
+
+   <span class="k">for</span><span class="p">(;;){</span>
+    <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">LEDParams0</span><span class="o">.</span><span class="n">myColour</span> <span class="o">=</span> <span class="n">CRGB</span><span class="p">::</span><span class="n">Red</span><span class="p">;</span>     <span class="o">//</span> <span class="n">Set</span> <span class="n">LED0</span> <span class="n">to</span> <span class="n">Red</span>
+    <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">LEDParams1</span><span class="o">.</span><span class="n">myColour</span> <span class="o">=</span> <span class="n">CRGB</span><span class="p">::</span><span class="n">Purple</span><span class="p">;</span>  <span class="o">//</span> <span class="n">Set</span> <span class="n">LED1</span> <span class="n">to</span> <span class="n">Purple</span>
+    <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">LEDParams0</span><span class="o">.</span><span class="n">blink</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>                <span class="o">//</span> <span class="n">Set</span> <span class="n">LED0</span> <span class="n">to</span> <span class="n">continous</span> <span class="n">one</span>
+    <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">LEDParams1</span><span class="o">.</span><span class="n">blink</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>                <span class="o">//</span> <span class="n">Set</span> <span class="n">LED1</span> <span class="n">to</span> <span class="n">blink</span>
+    <span class="o">//</span> <span class="n">Without</span> <span class="n">changing</span> <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">LEDParams1</span><span class="o">.</span><span class="n">time</span> <span class="n">LED1</span> <span class="n">will</span> <span class="n">blink</span> <span class="n">at</span> <span class="n">whatever</span> <span class="n">period</span> <span class="n">was</span> <span class="n">last</span> <span class="n">defined</span> <span class="n">there</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 <div class="section" id="mqtt">
 <h2>MQTT<a class="headerlink" href="#mqtt" title="Permalink to this headline">¶</a></h2>
-<p>Library: <a class="reference external" href="https://github.com/marvinroger/async-mqtt-client">Async MQQT Client</a></p>
+<p>The ESP32 side of the MQTT transitions are handled using the Async MQTT library and modified versions of the functions written in the <code class="docutils literal notranslate"><span class="pre">FullyFeatured-ESP32.ino</span></code> example included with the library.</p>
+<p>Library: <a class="reference external" href="https://github.com/marvinroger/async-mqtt-client">Async MQTT Client</a></p>
 <div class="section" id="proposed-topic-structure">
 <h3>Proposed Topic Structure<a class="headerlink" href="#proposed-topic-structure" title="Permalink to this headline">¶</a></h3>
 <p>Technical documentation:
@@ -514,15 +713,168 @@ it can clear the bits it checks on returning.</p>
 <span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span><span class="n">send</span> <span class="c1">//payload: JSON document holding logs?</span>
 </pre></div>
 </td></tr></table></div>
-<p># Roadmap to Further Development
-## Optimization
-### Interrupt functionality of the MFRC522 module
-The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnect so that is may be soldered to one of the ESP pins if desired.</p>
+</div>
+<div class="section" id="mqtt-functions">
+<h3>MQTT functions<a class="headerlink" href="#mqtt-functions" title="Permalink to this headline">¶</a></h3>
+<p>As mentioned above the MQTT functions are those included in the <code class="docutils literal notranslate"><span class="pre">FullyFeatured-ESP32.ino</span></code> example included with the library. Most of them remain unmodified, the exceptions to this are
+<code class="docutils literal notranslate"><span class="pre">connectToWifi()</span></code>,  <code class="docutils literal notranslate"><span class="pre">WiFiEvent()</span></code>, <code class="docutils literal notranslate"><span class="pre">onMqttConnect()</span></code>, and <code class="docutils literal notranslate"><span class="pre">onMqttMessage()</span></code> . As such I will only discuss these functions.</p>
+<p><code class="docutils literal notranslate"><span class="pre">connectToWifi()</span></code> - WiFi credentials must be placed or accessed from here.</p>
+<p><code class="docutils literal notranslate"><span class="pre">WiFiEvent()</span></code> - WIFIOUT_BIT_7 is set here when disconnection occurs</p>
+<p><code class="docutils literal notranslate"><span class="pre">onMqttConnect()</span></code> - Hardcoded subscriptions can be placed here.</p>
+<p><code class="docutils literal notranslate"><span class="pre">onMqttMessage()</span></code> - MQTT payloads from subscriptions enter here. Payloads must be read and operated on inside this function.</p>
+<div class="highlight-default notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">connectToWifi</span><span class="p">()</span> <span class="p">{</span>
+   <span class="n">Serial</span><span class="o">.</span><span class="n">println</span><span class="p">(</span><span class="s2">&quot;Connecting to Wi-Fi...&quot;</span><span class="p">);</span>
+   <span class="n">WiFi</span><span class="o">.</span><span class="n">begin</span><span class="p">(</span><span class="n">preferences</span><span class="o">.</span><span class="n">getString</span><span class="p">(</span><span class="s2">&quot;ssid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c_str</span><span class="p">(),</span> <span class="n">preferences</span><span class="o">.</span><span class="n">getString</span><span class="p">(</span><span class="s2">&quot;password&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c_str</span><span class="p">());</span> <span class="o">//</span> <span class="n">Access</span> <span class="n">WiFi</span> <span class="n">creds</span> <span class="n">stored</span> <span class="ow">in</span> <span class="n">NVS</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+<p>Wifi credentials must be placed or accessed here. Accessing via the non-volatile storage currently shown is not practical for mass deployment as this would require manually caching it on all deployed units.
+An alternative but similar locally cached system should be employed.</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">WiFiEvent</span><span class="p">(</span><span class="n">WiFiEvent_t</span> <span class="n">event</span><span class="p">)</span> <span class="p">{</span>
+ <span class="n">Serial</span><span class="p">.</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;[WiFi-event] event: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">event</span><span class="p">);</span>
+ <span class="k">switch</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">{</span>
+ <span class="k">case</span> <span class="nl">SYSTEM_EVENT_STA_GOT_IP</span><span class="p">:</span>
+     <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;WiFi connected&quot;</span><span class="p">);</span>
+     <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;IP address: &quot;</span><span class="p">);</span>
+     <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">WiFi</span><span class="p">.</span><span class="n">localIP</span><span class="p">());</span>
+     <span class="n">connectToMqtt</span><span class="p">();</span>
+     <span class="c1">// Clear the WiFi outage bit</span>
+     <span class="n">xEventGroupClearBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">WIFIOUT_BIT_7</span><span class="p">);</span>
+     <span class="k">break</span><span class="p">;</span>
+ <span class="k">case</span> <span class="nl">SYSTEM_EVENT_STA_DISCONNECTED</span><span class="p">:</span>
+     <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;WiFi lost connection&quot;</span><span class="p">);</span>
+     <span class="n">xTimerStop</span><span class="p">(</span><span class="n">mqttReconnectTimer</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span> <span class="c1">// ensure we don&#39;t reconnect to MQTT while reconnecting to Wi-Fi</span>
+               <span class="n">xTimerStart</span><span class="p">(</span><span class="n">wifiReconnectTimer</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span> <span class="c1">// Start wifiReconnectTimer immediately</span>
+
+     <span class="c1">// Set WiFi outage bit to change our authorization scheme</span>
+     <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">WIFIOUT_BIT_7</span><span class="p">);</span>
+     <span class="k">break</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>EventBits used to change behaviour based on WiFi connectivity must be toggled within this function. This is necessary so that in the event of a WiFi or server outtage the tools remain usable (ie. system
+defaults to granting access to anyone who presents a card) and to shift to logging those access requests in flash memory.</p>
+<div class="literal-block-wrapper docutils container" id="id9">
+<div class="code-block-caption"><span class="caption-text">onMqttConnect</span><a class="headerlink" href="#id9" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">onMqttConnect</span><span class="p">(</span><span class="kt">bool</span> <span class="n">sessionPresent</span><span class="p">)</span> <span class="p">{</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;Connected to MQTT.&quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;Session present: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">sessionPresent</span><span class="p">);</span>
+
+   <span class="c1">// Sub to the rfid topic</span>
+   <span class="kt">uint16_t</span> <span class="n">packetIdSub2</span> <span class="o">=</span> <span class="n">mqttClient</span><span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="s">&quot;rfid/auth/rsp&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;Subscribing at QoS 2, packetId: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">packetIdSub2</span><span class="p">);</span>
+
+   <span class="c1">// Sub to the estop topic</span>
+   <span class="kt">uint16_t</span> <span class="n">packetIdSub3</span> <span class="o">=</span> <span class="n">mqttClient</span><span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="s">&quot;rfid/estop&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;Subscribing at QoS 2, packetId: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">packetIdSub3</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>Hardcoded subscriptions to be made on boot should be placed in this function. However, subscriptions can made made elsewhere in code using same syntax.</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">onMqttMessage</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">topic</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">payload</span><span class="p">,</span> <span class="n">AsyncMqttClientMessageProperties</span> <span class="n">properties</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">index</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">total</span><span class="p">)</span> <span class="p">{</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;Publish received.&quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;  topic: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">topic</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;  qos: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">properties</span><span class="p">.</span><span class="n">qos</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;  dup: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">properties</span><span class="p">.</span><span class="n">dup</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;  retain: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">properties</span><span class="p">.</span><span class="n">retain</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;  len: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">len</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;  index: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">index</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;  total: &quot;</span><span class="p">);</span>
+   <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">total</span><span class="p">);</span>
+
+   <span class="kt">int</span> <span class="n">topicLength</span> <span class="o">=</span> <span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">topic</span><span class="p">));</span>
+   <span class="kt">int</span> <span class="n">payloadLength</span> <span class="o">=</span> <span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">payload</span><span class="p">));</span>
+   <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">rsp</span> <span class="o">=</span> <span class="s">&quot;rfid/auth/rsp&quot;</span><span class="p">;</span>
+   <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">estop</span> <span class="o">=</span> <span class="s">&quot;rfid/estop&quot;</span><span class="p">;</span>
+
+   <span class="c1">// const char * subs[30];</span>
+   <span class="c1">// sprintf(subs, &quot;rfid/%s/sub&quot;, mqttClient.clientId)</span>
+
+   <span class="cm">/* Possible pitfalls:</span>
+<span class="cm">   Retained messages will fall straight through into this on boot!!!</span>
+<span class="cm">   Be very careful how you use retains them.</span>
+<span class="cm">   */</span>
+
+   <span class="c1">// refid/auth</span>
+   <span class="c1">// This should maybe be functionized for neatness</span>
+   <span class="k">if</span> <span class="p">((</span><span class="n">strncmp</span> <span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">rsp</span><span class="p">,</span> <span class="n">topicLength</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">){</span> <span class="c1">// strncmp returns true if exact match</span>
+
+     <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;We have a matching topic&quot;</span><span class="p">);</span>
+
+     <span class="k">if</span> <span class="p">(((</span><span class="n">strncmp</span> <span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s">&quot;auth&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)){</span> <span class="c1">// Read only four indices just incase the payload is not null terminated</span>
+       <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;authorized!&quot;</span><span class="p">);</span>
+       <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">AUTH_BIT_1</span><span class="p">);</span> <span class="c1">//Set the authorized bit</span>
+       <span class="n">xEventGroupClearBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">TIMEOUT_BIT_3</span><span class="p">);</span> <span class="c1">// Clear the timeout bit just in case we&#39;re in a timeout</span>
+     <span class="p">}</span>
+     <span class="k">else</span> <span class="k">if</span><span class="p">(((</span><span class="n">strncmp</span> <span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s">&quot;denied&quot;</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)){</span>
+       <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;denied!&quot;</span><span class="p">);</span>
+       <span class="n">xEventGroupClearBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="p">(</span><span class="n">CARD_BIT_0</span><span class="o">|</span><span class="n">AUTH_BIT_1</span><span class="p">));</span> <span class="c1">// Revoke card and authorization bit if an unauthorized card arrives.</span>
+       <span class="n">vTaskResume</span><span class="p">(</span><span class="n">pollNewHandle</span><span class="p">);</span> <span class="c1">// Resume polling for new cards</span>
+
+     <span class="p">}</span>
+     <span class="k">else</span> <span class="k">if</span><span class="p">(((</span><span class="n">strncmp</span> <span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s">&quot;seekiosk&quot;</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)){</span>
+       <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;seekiosk!&quot;</span><span class="p">);</span>
+       <span class="c1">// Set kiosk bit?</span>
+     <span class="p">}</span>
+   <span class="p">}</span>
+   <span class="c1">// rfid/estop</span>
+   <span class="k">else</span> <span class="k">if</span> <span class="p">((</span><span class="n">strncmp</span> <span class="p">(</span><span class="n">topic</span><span class="p">,</span> <span class="n">estop</span><span class="p">,</span> <span class="n">topicLength</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)){</span>
+     <span class="k">if</span> <span class="p">(((</span><span class="n">strncmp</span> <span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s">&quot;fire&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)){</span> <span class="c1">// Read only four indices just incase the payload is not null terminated</span>
+       <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;Fire the eStop!&quot;</span><span class="p">);</span>
+       <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">ESTOPFIRE_BIT_5</span><span class="p">);</span>
+
+     <span class="p">}</span>
+     <span class="k">else</span> <span class="k">if</span><span class="p">(((</span><span class="n">strncmp</span> <span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s">&quot;clear&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)){</span>
+       <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;Clear the eStop!&quot;</span><span class="p">);</span>
+       <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">ESTOPCLEAR_BIT_6</span><span class="p">);</span>
+     <span class="p">}</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>onMqttMessage() is where published messages that our ESP32 is subsribed to arrive. This is also where EventBits that can only be set via server authorization are set (eg. AUTH_BIT_1,
+ESTOPCLEAR_BIT_6, and ESTOPFIRE_BIT_5).</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Care should be taken using <code class="docutils literal notranslate"><span class="pre">strncmp()</span></code>. Specifically, the <code class="docutils literal notranslate"><span class="pre">size_t</span> <span class="pre">num</span></code> parameter should be utilized where possible as payloads may be coming from non-null terminating languages such as Java-script.</p>
+</div>
+</div>
+</div>
+<div class="section" id="roadmap-to-further-development">
+<h2>Roadmap to Further Development<a class="headerlink" href="#roadmap-to-further-development" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="optimization">
+<h3>Optimization<a class="headerlink" href="#optimization" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="interrupt-functionality-of-the-mfrc522-module">
+<h4>Interrupt functionality of the MFRC522 module<a class="headerlink" href="#interrupt-functionality-of-the-mfrc522-module" title="Permalink to this headline">¶</a></h4>
+<p>The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnected so that is may be soldered to one of the ESP pins if desired.</p>
 <p>If this is to be pursued RTOS function calls will need to be changed to their ISR safe equivalents.</p>
-<p>### Shrinking program size for OTA
-For the over the air updates functionality to be used our program must occupty &lt;50% of flash memory. As of 2020/08/07 it occupies ~59%. Additioanlly as part of the OTA process logs from tools will havbe to be requested and trasnmitted before the OTA is initiated as this process will likely overwrite the SPIFFS partition.</p>
-<p>## Future features
-## Potential Pitfalls</p>
+</div>
+<div class="section" id="shrinking-program-size-for-ota">
+<h4>Shrinking program size for OTA<a class="headerlink" href="#shrinking-program-size-for-ota" title="Permalink to this headline">¶</a></h4>
+<p>For the over the air updates functionality to be used our program must occupy &lt;50% of flash memory. As of 2020/08/07 it occupies ~59%. Additionally as part of the OTA process logs from tools
+will have to be requested and transmitted before the OTA is initiated as this process will likely overwrite the SPIFFS partition.</p>
+</div>
+<div class="section" id="desired-future-features">
+<h4>Desired Future Features<a class="headerlink" href="#desired-future-features" title="Permalink to this headline">¶</a></h4>
+<ol class="arabic simple">
+<li><p>Addition of other sensors</p></li>
+</ol>
+<p>## Potential Pitfalls</p>
+</div>
 </div>
 </div>
 </div>

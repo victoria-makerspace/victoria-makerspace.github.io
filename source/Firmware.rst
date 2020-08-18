@@ -30,6 +30,13 @@ Learning RTOS on the ESP32
    There are differences in how the two are implemented.
 
 
+Tool Access Configuration and Initialization 
+----------------------------------------------
+
+All hardware pin assignments, timer periods, MQTT IP addresses, etc can be found in the ``toolAccessRTOS.h`` and ``toolAccessLinear.h`` respectively. All assignments are made via defines.  
+
+All timing periods in the ``toolAccessRTOS.h`` are made as a wrap of the ``pdMS_TO_TICKS(period_ms)`` RTOS macro which converts a desired period expressed in milliseconds to RTOS ticks.  
+
 Tool Access Data Structures
 -----------------------------
 
@@ -38,10 +45,9 @@ RTOS has a number of tools for passing data between tasks such as queues, stream
 simply passes the address of nested structures via the void pointer at task creation. This allows for the tasks to continue passing down the struct pointer to 
 help functions they may need to call.
 
-These nested structures are described in ```toolAccessRTOS.h```
-
 .. code-block:: C++
    :linenos:
+   :caption: Tool Access Data Structs defined in ``toolAccessRTOS.h``
 
     // Struct for holding UID and manipulating of UID data type
     typedef struct {      
@@ -178,11 +184,11 @@ EventGroups.
 
 .. Note::
    The unconditional transition from the Collision state to the timingOut state is necessary due to the MFRC522 modules returning TIMEOUT status codes instead of
-   COLLISION status code in the event of a collision. This does not prevent us from detect collisions but rather detecting how a collision is resolve.
-   Therefore the decision was made to push all collisions to the timingOut state. 
+   COLLISION status code in the event of a collision. This does not prevent us from detect collisions but rather detecting how a collision is resolved.
+   See MFRC522 primer for more detail. 
 
 State Transitions in RTOS
-''''''''''''''''''''''''''''
+""""""""""""""""""""""""""""
 
 In the RTOS branch of the code states are tracked via the EventBits contained within the EventGroup ``rfidStatesGroup``. The EventBits are interacted with via RTOS API calls
 and macros defined in ``toolAccessRTOS.h``.
@@ -201,9 +207,9 @@ and macros defined in ``toolAccessRTOS.h``.
    #define ESTOPCLEAR_BIT_6 ( 1 << 6 )
    #define WIFIOUT_BIT_7 ( 1 << 7 )
 
-Not all of the EventBits are utilized to make state transitions but are set or cleared according to the state they are named for. 
+Not all of the EventBits are utilized to make state transitions but are set or cleared according to the state they are named for in the event that they may be used for state transitions in the future.
 
-The three main RTOS API calls used to interact with the Event bits are
+The four main RTOS API calls used to interact with the Event bits are
 
 .. code-block:: C++
    :linenos:
@@ -211,28 +217,221 @@ The three main RTOS API calls used to interact with the Event bits are
    xEventGroupClearBits(EventGroupHandle_t xEventGroup, const EventBits_t uxBitsToClear)); // Clears specified bits
    xEventGroupSetBits(rfidStatesGroup, (CARD_BIT_0|AUTH_BIT_1)); // Sets specified bits
    EventBits_t xEventGroupWaitBits(const EventGroupHandle_t xEventGroup,const EventBits_t uxBitsToWaitFor,const BaseType_t xClearOnExit,const BaseType_t xWaitForAllBits,TickType_t xTicksToWait);
+   xEventGroupGetBits(rfidStatesGroup); // Checks value held in rfidStatesGroup
 
 Line one shows xEventGroupClearBits as the definition while line 2 shows xEventGroupSetBits as an actual call (they expect the same parameters).
 
 .. important::
-   ``CARD_BIT_0|AUTH_BIT_1`` are passed with :underline:`bitwise OR` because we are creating a bitmask to operator on the binary value contained within 
+   ``CARD_BIT_0|AUTH_BIT_1`` are passed with **bitwise OR** because we are creating a bitmask as an operator on the binary value contained within 
    rfidStatesGroup.
 
 Line 3 once again shows a formal definition. xEventGroupWaitBits is the call used to gate state transitions. It blocks a task (not the processor) until the specified bits 
-are set. :underline: `It cannot be used to check for being cleared`.  Notice that it can be configured to block until both specified bits are set or either bit is set. Additionally
+are set. It cannot be used to check for being cleared.  Notice that it can be configured to block until both specified bits are set or either bit is set. Additionally
 it can clear the bits it checks on returning. 
+
+Line 4 shows how the value held in an EventGroup could be checked if a conditional operation needs to be done outside of the RTOS API calls such as ``xEventGroupWaitBits``.
+
+.. warning::
+   Setting EvetBits can unblock multiple tasks at once. This can result in nondeterministic behaviour if care is not taken.
+
+
+
+
+RTOS Task List
+
+.. pollNewTask () 
+   waitBits = none
+   if new card
+   setBits = CARD_BIT_0
+     if check bits == 129
+     logging 
+     setBits = AUTH_BIT_1
+     else
+     pub uid for auth
+   vTaskSuspend(NULL)
+
+.. code-block:: C++
+   :linenos:
+   :caption: Polling for New Cards
+
+   void pollNewTask (void *params){
+      metaStruct *progParams = (metaStruct*) params;
+   
+      for(;;){
+         vTaskDelay(MS_POLL_TIMER_PERIOD); // Wait for at least he polling time
+
+         if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial ()){ // Poll for new cards BUT only when CARD_BIT_0 is not set
+
+            mfrc522.PICC_HaltA(); // We have read the card now be halt it
+            xEventGroupSetBits(rfidStatesGroup, CARD_BIT_0);                     // Now that we have detected a card set CARD_BIT_0 to unblock some Tasks
+
+            // We need to check if the card's UID is authorized
+
+            // First, check if to make sure the WiFi outtage flag hasn't been thrown
+            if(xEventGroupGetBits(rfidStatesGroup) == 129){ // If the WiFi is out simply grant access and log
+
+                // May still be useful for SPIFFS as storing a byte or int is more space efficient than a string. We can convert come re-connect to server
+                userID(progParams, mfrc522.uid.uidByte, mfrc522.uid.size); // Move UID from struct to our own buffer
+                Serial.println("WiFi is out");
+                writeLog(progParams);
+                xEventGroupSetBits(rfidStatesGroup, AUTH_BIT_1);  // Grant access unconditionally because WiFi is out
+            }
+
+         else{ // If the Wifi isn't out ask server for authorization
+            progParams->card.uidStrLen = (mfrc522.uid.size*3); // Our string length will be 3x the length the equivalent byte value
+            byteToHexStr(mfrc522.uid.uidByte, mfrc522.uid.size, progParams->card.uidStr, progParams->card.uidStrLen); // Now convert the byte in the mfrc522 struct to a string and dump it into our struct string     
+
+            // Publish our uid string to find out if its authorized
+            uint16_t packetIdPub1 = mqttClient.publish("rfid/auth/req", 1, false, progParams->card.uidStr); // Publish the read UID to rfid/auth/req. BE VERY CAREFUL TO NOT SET THE RETAIN FLAG
+            Serial.print("Publishing at QoS 1, packetId: ");
+            Serial.println(packetIdPub1);
+          }
+         // Now suspend our polling task until we hear back from MQTT broker OR if WiFi is out proceed with the request of the RFID control loop
+         vTaskSuspend ( NULL ); // Suspend ourselves. No need to keep polling now that there is a card
+       }
+
+       else {
+         // No new card, keep polling for new cards
+         Serial.print("EventBits:");
+        }
+      }
+   }
+
+
+``pollNewTask()`` is the entry point for the RFID control loop. Once it detects a new card it suspends itself. It is very important it is resumed at the appropriate places for the control loop to keep
+functioning (ie. whenever we return to state noCard). However, this also means that we can disable this task as a means of suspending the RFID functionality, see the EstopFire and EstopClear tasks for 
+more details.
+
+When WiFi/MQTT is connect only CARD_BIT_0 is set in ``pollNewTask()`` and AUTH_BIT_1 is set elsewhere in ``onMqttMessgae()``. 
+When connectivity to WiFi/MQTT cannot be establish both CARD_BIT_0 and AUTH_BIT_1 are set within this function.
+
+
+
+.. closeRelayTask()
+   waitBits = CARD_BIT_0 | AUTH_BIT_1
+   setBits = RELAY_BIT_2
+   vTaskSuspend ( NULL )
+
+
+
+
+.. pollPresTask ()
+   waitBits = CARD_BIT_0 | AUTH_BIT_1
+   SemaphoreGive SPIMutexHandle
+   vTaskDelay()
+      if present
+         Halt
+      else
+         clearBits = CARD_BIT_0 | AUTH_BIT_1
+         setBits = TIMEOUT_BIT_3
+         vTaskResume pollNewHandle
+   SemaphoreTake SPIMutexHandle
+
+
+.. collPollTask ()
+   waitBits = CARD_BIT_0 | AUTH_BIT_1
+   SemaphoreTake SPIMutexHandle
+      if coll 
+         clearBits = CARD_BIT_0 |  AUTH_BIT_1
+         setBits = TIMEOUT_BIT_3 | COLL_BIT_4
+         vTaskResume pollNewHandle
+      else
+      // do nothing
+   SemaphoreGive SPIMutexHandle
+
+.. timeoutTask ()
+   waitBits = TIMEOUT_BIT_3
+   vTaskDelay MS_TIMEOUT_PERIOD
+   waitBits = TIMEOUT_BIT_3 // two step block
+   pub eou/to
+   digitalWrite RelayOpen
+   clearBits = TIMEOUT_BIT_3 | RELAY_BIT_2
+
+
+
+
+.. Ignore for now
+   eStopSetTask ()
+   waitBits = ESTOPFIRE_BIT_5
+
+.. eStopClearTask ()
+   waitBits = ESTOPCLEAR_BIT_6
+
 
 COM12999 - Addressable LEDs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
- 
+
+Control of the COM12999 addressable LEDs is done via the FastLED library, a single RTOS task definition ``blinkyLEDTask``.
+
 Library \: `FastLED <https://github.com/FastLED/FastLED>`_
 
 blinky LED Task
 
+.. code-block:: C++
+   :caption: blinky LED Task
+   :linenos:
+
+   void blinkyLED (void *params){
+
+      LEDParams *l = (LEDParams*)params; // Dumping our struct parameters into task instance of LEDParams via casting of void *params to LEDParams
+
+  
+      for (;;){ // Infinite loop required for RTOS tasks b/c if allowed to return they would delete
+
+         // Branch based on blink status  
+         if(l->blink){                             // if blink flag has been set
+            leds[l->led] = CRGB::Black;            // Set LED specified in passed params to OFF state 
+            FastLED.show();                        // Toggle the LED state to new
+            vTaskDelay(pdMS_TO_TICKS(l->time));    // RTOS delay blocks task not processor
+
+            leds[l->led] = l->myColour;            // Set LED specified in passed params to the colour specified in same passed params
+            FastLED.show();
+            vTaskDelay(pdMS_TO_TICKS(l->time));   // Set delay time according to passed param AND div by port TICK period ms
+         }  
+         else{ 
+            leds[l->led] = l->myColour;            // Set LED specified in passed params to the colour specified in same passed params
+            FastLED.show();                        // Show it 
+            vTaskSuspend ( NULL );                 // Suspend ourselves since blink = false therefore the task need not keep running 
+         }
+      }
+   }
+
+Where the LED control tasks differ slightly from the other RTOS tasks is at creation they are passed the address of their parameter struct rather than the address of the metaStruct. The LED tasks
+need only access to the LED parameters while other tasks needs access to their own parameters and the LED parameters.
+
+.. code-block:: C++
+   :caption: LED Task Creation in void setup ()
+
+   //Task creation
+   xTaskCreatePinnedToCore(blinkyLED, "blinkLED", 1024, &progParams.LEDParams0, 1, &blinkLEDHandle0, 1);
+   xTaskCreatePinnedToCore(blinkyLED, "blinkLED1", 1024, &progParams.LEDParams1, 1, &blinkLEDHandle1, 1);
+   
+Manipulation of the LEDs can then be achieve simply by changing the values held in ``LEDParams0`` and ``LEDParams1`` via the void pointer. 
+
+.. note::
+   If the previous state of an LED was ``blink == 0`` then its respective LEDTask will have to be resumed.
+
+.. code-block::
+   :caption: Example LED manipulation
+
+   void exampleTask (void *params){
+   metaStruct *progParams = (metaStruct*) params;
+      
+      for(;;){
+       progParams->LEDParams0.myColour = CRGB::Red;     // Set LED0 to Red
+       progParams->LEDParams1.myColour = CRGB::Purple;  // Set LED1 to Purple
+       progParams->LEDParams0.blink = 0;                // Set LED0 to continous one 
+       progParams->LEDParams1.blink = 1;                // Set LED1 to blink
+       // Without changing progParams->LEDParams1.time LED1 will blink at whatever period was last defined there
+      }
+   }
+
 MQTT
 -------
 
-Library\: `Async MQQT Client <https://github.com/marvinroger/async-mqtt-client>`_
+The ESP32 side of the MQTT transitions are handled using the Async MQTT library and modified versions of the functions written in the ``FullyFeatured-ESP32.ino`` example included with the library.
+
+Library\: `Async MQTT Client <https://github.com/marvinroger/async-mqtt-client>`_
 
 
 Proposed Topic Structure
@@ -275,17 +474,179 @@ This is the proposed MQTT Topic Structure
    tools/+/+/logs/send // payload: req
    tools/+/+/logs/send //payload: JSON document holding logs?
 
+MQTT functions
+^^^^^^^^^^^^^^^^
 
-# Roadmap to Further Development
-## Optimization
-### Interrupt functionality of the MFRC522 module
-The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnect so that is may be soldered to one of the ESP pins if desired. 
+As mentioned above the MQTT functions are those included in the ``FullyFeatured-ESP32.ino`` example included with the library. Most of them remain unmodified, the exceptions to this are
+``connectToWifi()``,  ``WiFiEvent()``, ``onMqttConnect()``, and ``onMqttMessage()`` . As such I will only discuss these functions.
+
+``connectToWifi()`` - WiFi credentials must be placed or accessed from here.
+
+``WiFiEvent()`` - WIFIOUT_BIT_7 is set here when disconnection occurs
+
+``onMqttConnect()`` - Hardcoded subscriptions can be placed here.
+
+``onMqttMessage()`` - MQTT payloads from subscriptions enter here. Payloads must be read and operated on inside this function.
+
+.. code-block:: 
+   :linenos:
+   
+   void connectToWifi() {
+      Serial.println("Connecting to Wi-Fi...");
+      WiFi.begin(preferences.getString("ssid").c_str(), preferences.getString("password").c_str()); // Access WiFi creds stored in NVS
+   }
+
+Wifi credentials must be placed or accessed here. Accessing via the non-volatile storage currently shown is not practical for mass deployment as this would require manually caching it on all deployed units.
+An alternative but similar locally cached system should be employed.
+
+
+.. code-block:: C++
+   
+   void WiFiEvent(WiFiEvent_t event) {
+    Serial.printf("[WiFi-event] event: %d\n", event);
+    switch(event) {
+    case SYSTEM_EVENT_STA_GOT_IP:
+        Serial.println("WiFi connected");
+        Serial.println("IP address: ");
+        Serial.println(WiFi.localIP());
+        connectToMqtt();
+        // Clear the WiFi outage bit
+        xEventGroupClearBits(rfidStatesGroup, WIFIOUT_BIT_7);
+        break;
+    case SYSTEM_EVENT_STA_DISCONNECTED:
+        Serial.println("WiFi lost connection");
+        xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+		  xTimerStart(wifiReconnectTimer, 0); // Start wifiReconnectTimer immediately
+
+        // Set WiFi outage bit to change our authorization scheme
+        xEventGroupSetBits(rfidStatesGroup, WIFIOUT_BIT_7);
+        break;
+     }
+   }
+
+EventBits used to change behaviour based on WiFi connectivity must be toggled within this function. This is necessary so that in the event of a WiFi or server outtage the tools remain usable (ie. system 
+defaults to granting access to anyone who presents a card) and to shift to logging those access requests in flash memory.
+
+.. code-block:: C++
+   :caption: onMqttConnect 
+
+   void onMqttConnect(bool sessionPresent) {
+      Serial.println("Connected to MQTT.");
+      Serial.print("Session present: ");
+      Serial.println(sessionPresent);
+
+      // Sub to the rfid topic
+      uint16_t packetIdSub2 = mqttClient.subscribe("rfid/auth/rsp", 2);
+      Serial.print("Subscribing at QoS 2, packetId: ");
+      Serial.println(packetIdSub2);
+   
+      // Sub to the estop topic
+      uint16_t packetIdSub3 = mqttClient.subscribe("rfid/estop", 2);
+      Serial.print("Subscribing at QoS 2, packetId: ");
+      Serial.println(packetIdSub3);
+   }
+
+Hardcoded subscriptions to be made on boot should be placed in this function. However, subscriptions can made made elsewhere in code using same syntax.
+
+
+.. code-block:: C++
+
+   void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+      Serial.println("Publish received.");
+      Serial.print("  topic: ");
+      Serial.println(topic);
+      Serial.print("  qos: ");
+      Serial.println(properties.qos);
+      Serial.print("  dup: ");
+      Serial.println(properties.dup);
+      Serial.print("  retain: ");
+      Serial.println(properties.retain);
+      Serial.print("  len: ");
+      Serial.println(len);
+      Serial.print("  index: ");
+      Serial.println(index);
+      Serial.print("  total: ");
+      Serial.println(total);
+   
+      int topicLength = (strlen(topic));
+      int payloadLength = (strlen(payload));
+      const char * rsp = "rfid/auth/rsp";
+      const char * estop = "rfid/estop";
+
+      // const char * subs[30];
+      // sprintf(subs, "rfid/%s/sub", mqttClient.clientId)
+      
+      /* Possible pitfalls:
+      Retained messages will fall straight through into this on boot!!!
+      Be very careful how you use retains them.
+      */
+
+      // refid/auth
+      // This should maybe be functionized for neatness
+      if ((strncmp (topic, rsp, topicLength)) == 0){ // strncmp returns true if exact match
+      
+        Serial.println("We have a matching topic");
+        
+        if (((strncmp (payload, "auth", 4)) == 0)){ // Read only four indices just incase the payload is not null terminated
+          Serial.println("authorized!");
+          xEventGroupSetBits(rfidStatesGroup, AUTH_BIT_1); //Set the authorized bit
+          xEventGroupClearBits(rfidStatesGroup, TIMEOUT_BIT_3); // Clear the timeout bit just in case we're in a timeout
+        }
+        else if(((strncmp (payload, "denied", 6)) == 0)){
+          Serial.println("denied!");
+          xEventGroupClearBits(rfidStatesGroup, (CARD_BIT_0|AUTH_BIT_1)); // Revoke card and authorization bit if an unauthorized card arrives. 
+          vTaskResume(pollNewHandle); // Resume polling for new cards
+          
+        }
+        else if(((strncmp (payload, "seekiosk", 8)) == 0)){
+          Serial.println("seekiosk!");
+          // Set kiosk bit?
+        }
+      }
+      // rfid/estop
+      else if ((strncmp (topic, estop, topicLength) == 0)){
+        if (((strncmp (payload, "fire", 4)) == 0)){ // Read only four indices just incase the payload is not null terminated
+          Serial.println("Fire the eStop!");
+          xEventGroupSetBits(rfidStatesGroup, ESTOPFIRE_BIT_5); 
+          
+        }
+        else if(((strncmp (payload, "clear", 5)) == 0)){
+          Serial.println("Clear the eStop!");
+          xEventGroupSetBits(rfidStatesGroup, ESTOPCLEAR_BIT_6); 
+        }
+      }
+   }
+
+onMqttMessage() is where published messages that our ESP32 is subsribed to arrive. This is also where EventBits that can only be set via server authorization are set (eg. AUTH_BIT_1,
+ESTOPCLEAR_BIT_6, and ESTOPFIRE_BIT_5).
+
+
+.. warning::
+   Care should be taken using ``strncmp()``. Specifically, the ``size_t num`` parameter should be utilized where possible as payloads may be coming from non-null terminating languages such as Java-script.
+
+Roadmap to Further Development
+-------------------------------
+
+Optimization
+^^^^^^^^^^^^^^
+
+Interrupt functionality of the MFRC522 module
+""""""""""""""""""""""""""""""""""""""""""""""
+
+The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnected so that is may be soldered to one of the ESP pins if desired. 
 
 If this is to be pursued RTOS function calls will need to be changed to their ISR safe equivalents.
 
-### Shrinking program size for OTA
-For the over the air updates functionality to be used our program must occupty <50% of flash memory. As of 2020/08/07 it occupies ~59%. Additioanlly as part of the OTA process logs from tools will havbe to be requested and trasnmitted before the OTA is initiated as this process will likely overwrite the SPIFFS partition.
+Shrinking program size for OTA
+"""""""""""""""""""""""""""""""""""""
 
-## Future features
+For the over the air updates functionality to be used our program must occupy <50% of flash memory. As of 2020/08/07 it occupies ~59%. Additionally as part of the OTA process logs from tools 
+will have to be requested and transmitted before the OTA is initiated as this process will likely overwrite the SPIFFS partition.
+
+Desired Future Features
+"""""""""""""""""""""""""
+
+1. Addition of other sensors
+
 ## Potential Pitfalls
 

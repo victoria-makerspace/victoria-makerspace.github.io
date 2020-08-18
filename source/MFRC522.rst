@@ -157,6 +157,7 @@ Once again the solution to our issue is hidden in the datasheet only this time i
 be a serviceable means of detecting a collision. 
 
 The anticollision routine carried out by the MFRC522 ensures that one card is read per REQA command. The colliding card/cards must wait for addition REQA commands to be sent before they can be read.
+This means that we can poll for a collision simply by calling a ``mfrc522.PICC_IsNewCardPresent()`` (recall that this function calls REQA) repeatedly in a loop and counting the 1'a returned by it. 
 
 .. code-block:: C++
    :caption: Collision Polling detection
@@ -164,7 +165,7 @@ The anticollision routine carried out by the MFRC522 ensures that one card is re
    void collPolling(){ 
       for (int i = 0; i < 4; i++){ 
          
-         if (mfrc522.PICC_IsNewCardPresent()){ // Any more than 1 and we have a collision or a misaligned card
+         if (mfrc522.PICC_IsNewCardPresent()){ // IF PICC_IsNewCardPresent returns 1 > once we have a collision or a misaligned card
          //inc counter
          (progParams->card.collCounter)++;
         }
@@ -174,7 +175,7 @@ The anticollision routine carried out by the MFRC522 ensures that one card is re
       }
       if (progParams->card.collCounter >= 2){
          // We have a collision
-         // GOTO state TIMEOUT
+         // Unconditional GOTO state TIMEOUT
       }
       else{ // No collision
          // No collision 
@@ -185,3 +186,10 @@ The anticollision routine carried out by the MFRC522 ensures that one card is re
       progParams->card.collCounter = 0; // Reset the collision counter
       }
       
+.. note::
+   This method reliably detects collisions however it will also produce false positives if a single card is misaligned on the reader. Given that there is to be a cardholder that fixes the alignment
+   of the card to the reader is this not likely to be a problem.
+
+As can be seen in the code above if a collision is detected we unconditionally go to state timeout. This is because although the above polling routine can detect a collision it cannot reliably determine
+how a collision is resolved, ie. which card was removed. The simplest resolution to this problem is simply to go to a timeout state which can be interrupted by re-authorizing one of the cards or allowing
+the timeout to occur.

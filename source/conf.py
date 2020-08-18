@@ -28,7 +28,10 @@ author = 'Liam Brinston'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 import sphinx_rtd_theme
-extensions = ["sphinx_rtd_theme"]
+extensions = ['sphinx_rtd_theme', 'sphinxcontrib.mermaid']
+
+# GitHub repo for mermaid extensions:
+# https://github.com/mgaitan/sphinxcontrib-mermaid
 
 # Trying to resolve Sphinx error of contents.rst not found
 master_doc = 'index'

@@ -172,12 +172,43 @@ The states and the transitions between those states are a result of the number o
 4. *timingOut* - In this state a timer is run down because either a collision has occurred or a card has been removed. This state can be exited by introducing
    a new card to reader or on expiration of the timer. Therefore we may think of it as occurring concurrently with the no cards present state. 
 
-.. figure:: ./images/toolAccessStates.png
-   :align: center
-   :alt: State diagram for MFRC522 Hardware
 
-   All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally. Authorization step omitted for clarity.
+**RFID States Diagram**
 
+.. mermaid's :caption: directive places the caption on the bottom not the top
+
+.. mermaid::
+   :align: center 
+   :caption: All state transitions are conditional except for Collision goes to timingOut which occurs unconditionally. Authorization step omitted for clarity.
+
+   stateDiagram
+   [*]-->noCard
+   noCard --> oneCard: Card detected
+   
+   state noCard{
+   	openRelay
+   }
+   
+   state oneCard{
+   	closeRelay
+   }
+   
+   state oneCard <<fork>>
+   oneCard-->Collision: >1 card present
+   oneCard-->timingOut: Card removed
+   
+   
+   Collision-->timingOut
+   
+   state timingOut{
+   	startTimer
+   }
+   
+   state timingOut <<fork>>
+   timingOut-->oneCard: Card detected
+   timingOut-->noCard: Timeout
+
+   
 This state diagram holds true for both the Linear and the RTOS branches of the code. The states and state transitions are simply handled differently. In the linear
 branches the states are tracked via boolean flag variables and transitions are made via conditional checks against those flags. In the RTOS branch this is done via 
 EventGroups.
@@ -234,10 +265,11 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 .. warning::
    Setting EvetBits can unblock multiple tasks at once. This can result in nondeterministic behaviour if care is not taken.
 
+**RTOS States Diagram**
 
 
 
-RTOS Task List
+**RTOS Task List**
 
 .. pollNewTask () 
    waitBits = none
@@ -431,48 +463,25 @@ MQTT
 
 The ESP32 side of the MQTT transitions are handled using the Async MQTT library and modified versions of the functions written in the ``FullyFeatured-ESP32.ino`` example included with the library.
 
-Library\: `Async MQTT Client <https://github.com/marvinroger/async-mqtt-client>`_
-
-
-Proposed Topic Structure
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Technical documentation\:
 `MQTT Topics & Best Practices <https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/>`_
+Library\: `Async MQTT Client <https://github.com/marvinroger/async-mqtt-client>`_
 
-This is the proposed MQTT Topic Structure
+Current MQTT Structure
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The current MQTT structure (as of 2020/08/17) is relatively simple for the sake of prototyping.
 
 .. code-block:: C++
-   :linenos:
-   
-   // + single level wildcard
-   // # multi level wildcard
-   // wildcards may be used to subscribe to topics only not publish
+   :caption: Current MQTT Structure 
 
-   // Whoami - would allows tool to append hardcoded MQTT topics to include workshop/toolalias 
-   tool/MAC // payload: workshop, toolalias
-
-   // Workshops level topics
-   tools/woodshop/toolalias
-   tools/fasbshop/toolalias
-   tools/machineshop/toolalias
-   tools/electronics/toolalias
-   tools/sewing/toolalias
+   // Publishes
+   rfid/auth/req // payload: uid
+   rfid/auth/eou // payload: uid 
    
-   // Authorization topics
-   tools/+/+/auth/req // payloads: UID
-   tools/+/+/auth/rsp // payloads: auth|denied|seekiosk
-   tools/+/+/auth/eou // uid
-   
-   // Estop topics
-   tools/estop   // Makerspace level
-   tools/+/estop // Workshop level
-   tools/+/+/estop // Tool level
-   
-   // Logging topics
-   tools/+/+/logs/ // payload: status
-   tools/+/+/logs/status/rsp // payload: true, sizeoflog|false
-   tools/+/+/logs/send // payload: req
-   tools/+/+/logs/send //payload: JSON document holding logs?
+   // Subscriptions
+   rfid/estop //payload: fire|clear
+   rfid/auth/rsp // payloads: auth|denied|seekiosk
 
 MQTT functions
 ^^^^^^^^^^^^^^^^
@@ -624,11 +633,93 @@ ESTOPCLEAR_BIT_6, and ESTOPFIRE_BIT_5).
 .. warning::
    Care should be taken using ``strncmp()``. Specifically, the ``size_t num`` parameter should be utilized where possible as payloads may be coming from non-null terminating languages such as Java-script.
 
+
+Proposed Future MQTT Topic Structure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is the proposed future MQTT Topic Structure. This structure would allow for much finer grained control at both the workshop and the individual tool level.
+Changes to the code base will be necessary in order to make this viable. Primarily a means of telling each tool who it is and what workshop it is in so that
+it could ammend more generic hardcoded MQTT topics. 
+
+.. code-block:: C++
+   :linenos:
+   
+   // + single level wildcard
+   // # multi level wildcard
+   // wildcards may be used to subscribe to topics only not publish
+
+   // Whoami - would allows tool to append hardcoded MQTT topics to include workshop/toolalias 
+   tool/MAC // payload: workshop, toolalias
+
+   // Workshops level topics
+   tools/woodshop/toolalias
+   tools/fasbshop/toolalias
+   tools/machineshop/toolalias
+   tools/electronics/toolalias
+   tools/sewing/toolalias
+   
+   // Authorization topics
+   tools/+/+/auth/req // payloads: UID
+   tools/+/+/auth/rsp // payloads: auth|denied|seekiosk
+   tools/+/+/auth/eou // uid
+   
+   // Estop topics
+   tools/estop   // Makerspace level
+   tools/+/estop // Workshop level
+   tools/+/+/estop // Tool level
+   
+   // Logging topics
+   tools/+/+/logs/ // payload: status
+   tools/+/+/logs/status/rsp // payload: true, sizeoflog|false
+   tools/+/+/logs/send // payload: req
+   tools/+/+/logs/send //payload: JSON document holding logs?
+
+
 Roadmap to Further Development
 -------------------------------
 
 Optimization
 ^^^^^^^^^^^^^^
+
+Whoami implementation for MQTT Topic Expansion
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+As noted in the section on future MQTT topic structure each tool access system will need to be told what tool it is and what workshop it is in. At least if we are to
+avoid having to hardcode each station.
+
+Possible solutuion:
+
+.. code-block:: C++
+   :caption: ESP32 Generic Hardcoded MQTT Topics
+ 
+   // These may have to live in a struct so that they may be editted
+   tool/auth/req
+   tool/auth/rsp
+   tool/auth/eou
+   
+   // Subscriptions
+   estop 
+   tool/MAC // payload: JSON doc {tool: "alias", workshop: "woodshop" }
+
+.. code-block:: C++
+   :caption: Server side MQTT Topic
+
+   // Retain flag set
+   tool/MAC1  // payload: JSON doc {tool: "tablesaw", workshop: "woodshop" }
+   tool/MAC2  // payload: JSON doc {tool: "bandsaw", workshop: "woodshop" }
+   // etc
+
+On boot ESP32 will recieved retained publish on /tool/myMAC with a JSON document as the payload. This will have to activate a helper task to unpack that JSON document
+and ammend the /workshop/tool to all of the hardcoded MQTT topics. Task will have to unsubscribe from tool/myMAC on successful completion of topic editing lest the topic be repeatedly retriggered.
+
+Requirements:
+
+JSON implenetation for ESP32
+MQTTammendTask design
+
+.. code-block:: C++
+   ESP.getEfuseMAC(); // This call will return the unique factory programed MAC address.
+
 
 Interrupt functionality of the MFRC522 module
 """"""""""""""""""""""""""""""""""""""""""""""

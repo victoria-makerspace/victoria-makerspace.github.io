@@ -14,6 +14,7 @@ Welcome to Victoria Makerspace's Tool Access Project Documentation!
    PCBDesign
    Firmware
    MFRC522
+   Assembly
 
 Indices and tables
 ==================

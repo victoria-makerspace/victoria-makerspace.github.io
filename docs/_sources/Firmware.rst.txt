@@ -16,6 +16,23 @@ The linear branch is "standard" linear Arduino code. It can't query a database a
 The RTOS branch utilizes the  RTOS running underneath the Arduino layer for more graceful task handling. The Arduino framework is still utilized to interact 
 with peripherals but is wrapped in RTOS Tasks. This branch communicates with an MQTT broker via WiFi for authentication of RFID cards.
 
+Getting Setup to Code with the ESP32
+-------------------------------------
+
+There are three main routes to getting coding on the ESP32.
+
+1. Through the Arduino index (most beginner friendly, can code in Arduino flavoured C++)
+
+2. VSCode + Espressif IDF (for advanced users/C literate coders)
+
+3. VSCode + Platformio (Intermediate but with its own share of headaches)
+
+One issue than can be encountered in going this route is the compiler finding two WiFi.h files particularly if you already have the Arduino IDE installed.
+One of these is located in the directory in which the Arduino IDE is installed in a folder named libraries. This is distinct from the libraries folder where external
+libararies are installed. This is the Arduino core libraries.
+The other WiFi.h is located in the platformio directory under ``packages\frameswork-arduinoespressif32\libraries``. This is the WiFi.h you want to use.
+
+
 
 Learning RTOS on the ESP32
 -----------------------------
@@ -269,6 +286,15 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 
 
 
+**RTOS Task Summary**
+
+
+.. +-------------------+---------------------+-------------------+-------------------+-------------------+
+| Task Name         | Task Handle         | WaitBits()        | SetBits()         | 
++===================+=====================+===================+===================+
+| pollNewTask()     | pollNewHandle       | N/A               | If(server) CARD_BIT_0
+|                   |                     |                   | 
+
 **RTOS Task List**
 
 .. pollNewTask () 
@@ -288,9 +314,24 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 
    void pollNewTask (void *params){
       metaStruct *progParams = (metaStruct*) params;
-   
+      uint32_t notificationValue;
+
       for(;;){
          vTaskDelay(MS_POLL_TIMER_PERIOD); // Wait for at least he polling time
+
+         notificationValue = ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS(300));
+         if(notificationValue == 1 ){          // Notification from onMqttMessage that a card was denied
+           Serial.println("Notification!!");
+           Serial.println(notificationValue);
+           // Set both LEDS to Red
+           progParams->LEDParams0.myColour = CRGB::Red; 
+           progParams->LEDParams1.myColour = CRGB::Red;
+           // Set both LEDs to not blink
+           progParams->LEDParams0.blink = 1;
+           progParams->LEDParams1.blink = 1;
+           vTaskResume(blinkLEDHandle0);
+           vTaskResume(blinkLEDHandle1);
+         }
 
          if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial ()){ // Poll for new cards BUT only when CARD_BIT_0 is not set
 
@@ -331,11 +372,16 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 
 
 ``pollNewTask()`` is the entry point for the RFID control loop. Once it detects a new card it suspends itself. It is very important it is resumed at the appropriate places for the control loop to keep
-functioning (ie. whenever we return to state noCard). However, this also means that we can disable this task as a means of suspending the RFID functionality, see the EstopFire and EstopClear tasks for 
-more details.
+functioning (ie. whenever we return to state noCard, ``timeoutTask``). However, this also means that we can disable this task as a means of suspending the RFID functionality, see the EstopFire and 
+EstopClear tasks for more details.
+
+This task also checks for a task notification on line 7. This notification is made from ``onMqttMessage()`` when a card is denied by the server. The LEDParam structs are out of scope of the MQTT callback functions 
+of the AsynMQTTClient library and I could not figure out a way of passing them the value. Instead ``pollNewTask()``, which is also resumed when a card is denied, is notified so that it may change the LEDParams
+to blinking red.
 
 When WiFi/MQTT is connect only CARD_BIT_0 is set in ``pollNewTask()`` and AUTH_BIT_1 is set elsewhere in ``onMqttMessgae()``. 
-When connectivity to WiFi/MQTT cannot be establish both CARD_BIT_0 and AUTH_BIT_1 are set within this function.
+When a WiFi or MQTT disconnection event occurs WIFIOUT_BIT_7 is set. This is detected on line 9 and allows for both CARD_BIT_0 and AUTH_BIT_1 to be set within ``pollNewTask()`` without server authorization. 
+This is where future implementation for flash memory logging should be placed.
 
 
 
@@ -344,8 +390,45 @@ When connectivity to WiFi/MQTT cannot be establish both CARD_BIT_0 and AUTH_BIT_
    setBits = RELAY_BIT_2
    vTaskSuspend ( NULL )
 
+.. code-block:: C++
+   :linenos:
+
+   void closeRelayTask (void *params){
+   
+     metaStruct *progParams = (metaStruct*) params; // Should be static/const maybe?
+   
+     const TickType_t xTicksToWait = portMAX_DELAY; // Wait forever 
+     const EventBits_t xBitsToWaitFor = (CARD_BIT_0 | AUTH_BIT_1); // This creates a mask for checking our bits. To make mask we always use |
+     EventBits_t uxBits;                                          // But to check a mask we always use &
+   
+     for(;;){
+       uxBits = xEventGroupWaitBits(rfidStatesGroup, xBitsToWaitFor, pdFALSE, pdTRUE, xTicksToWait);
+
+       Serial.println("I'm going to close the relay!");
+
+       // Set both LEDS to Green
+       progParams->LEDParams0.myColour = CRGB::Green; 
+       progParams->LEDParams1.myColour = CRGB::Green;
+       // Set both LEDs to not blink
+       progParams->LEDParams0.blink = 0;
+       progParams->LEDParams1.blink = 0;
+
+       Serial.println("Light the lights!");
+       vTaskResume(blinkLEDHandle0); // Resume the LED task
+       vTaskResume(blinkLEDHandle1); // Resume the LED task
 
 
+       digitalWrite(RELAY_PIN, HIGH); // Close the relay
+
+        // Set relayBit
+       xEventGroupSetBits(rfidStatesGroup, RELAY_BIT_2);
+
+       vTaskSuspend ( NULL ); // Suspend ourselves. No need to keep polling for new now that we know a card is there
+      }
+     }
+
+``closeRelayTask`` unblocks once CARD_BIT_0 and AUTH_BIT_1 are set. It closes the relay, sets the RELAY_BIT_2 (not currently used for anything), changes the LEDs to a solid green to indicate this to the user.
+The task then suspends itself once all of this has been achieved. This task is resumed in ``timeoutTask()``.
 
 .. pollPresTask ()
    waitBits = CARD_BIT_0 | AUTH_BIT_1
@@ -359,6 +442,37 @@ When connectivity to WiFi/MQTT cannot be establish both CARD_BIT_0 and AUTH_BIT_
          vTaskResume pollNewHandle
    SemaphoreTake SPIMutexHandle
 
+.. code-block:: C++
+   :linenos:
+
+   void pollPresTask (void *params){
+     //UBaseType_t uxHighWaterMark;
+     EventBits_t uxBits;
+     const TickType_t xTicksToWait = portMAX_DELAY; // Wait forever 
+     const EventBits_t xBitsToWaitFor = (CARD_BIT_0 | AUTH_BIT_1 ); // This creates a mask for checking our bits. To make mask we always use |
+     byte resultWake;
+     byte bufferATQA[2];
+     byte bufferSize = sizeof(bufferATQA);
+   
+     metaStruct *progParams = (metaStruct*) params; 
+
+     for(;;){
+       // Wait for CARD_BIT_0 and AUTH_BIT_1 to be set before proceeding
+       uxBits = xEventGroupWaitBits(rfidStatesGroup, xBitsToWaitFor, pdFALSE, pdTRUE, xTicksToWait);
+   
+       xSemaphoreTake(SPIMutexHandle, portMAX_DELAY); // Must take the SPIMutex if you wish to proceed. This prevents presPoll and collPoll from trying to access SPI bus at same time
+       
+       vTaskDelay(MS_POLL_TIMER_PERIOD); // Only poll every 100ms?
+   
+       pollPres(progParams, &rfidStatesGroup, &blinkLEDHandle0, &blinkLEDHandle1, &pollNewHandle);
+   
+       xSemaphoreGive(SPIMutexHandle); // Now give up the Mutex handle so collPoll may execute
+     }
+   }
+
+``pollPresTask``  unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. Because ``pollPresTask``and ``collPollTask`` occur in the same state and both utilize the SPI bus a Mutex is given/taken by the two Tasks. 
+If ``pollPres()`` detects that the authorized card has left the RF field the CARD_BIT_0 and AUTH_BIT_1 is cleared then the TIMEOUT_BIT_3 is set. This unblocks the ``timeoutTask()`` while placing both
+``pollPresTask()`` and ``collPollTask()`` back in the blocked state. 
 
 .. collPollTask ()
    waitBits = CARD_BIT_0 | AUTH_BIT_1
@@ -370,6 +484,34 @@ When connectivity to WiFi/MQTT cannot be establish both CARD_BIT_0 and AUTH_BIT_
       else
       // do nothing
    SemaphoreGive SPIMutexHandle
+
+.. code-block:: C++
+   :linenos:
+
+   void collPollTask (void *params){ // Must sync with pollPres
+
+     metaStruct *progParams = (metaStruct*) params;
+
+     EventBits_t uxBits;
+     const TickType_t xTicksToWait = portMAX_DELAY; // Wait forever 
+     const EventBits_t xBitsToWaitFor = (CARD_BIT_0 | AUTH_BIT_1 ); // This creates a mask for checking our bits. To make mask we always use |
+     char collCounter = 0;
+   
+     for(;;){
+
+       uxBits = xEventGroupWaitBits(rfidStatesGroup, xBitsToWaitFor, pdFALSE, pdTRUE, xTicksToWait); // Block until card and auth bits are set
+
+       xSemaphoreTake(SPIMutexHandle, portMAX_DELAY); // Must have the SPI mutex inorder to proceed.
+
+       // Collision polling function call
+       collPolling (progParams, &blinkLEDHandle0, &blinkLEDHandle1, &rfidStatesGroup, &pollNewHandle);
+
+       xSemaphoreGive(SPIMutexHandle); // Now give up the Mutex handle so presPoll may execute
+     }
+   }
+
+``collPollTask()`` unblocks when CARD_BIT_0 and AUTH_BIT_1 are set.
+
 
 .. timeoutTask ()
    waitBits = TIMEOUT_BIT_3
@@ -455,6 +597,9 @@ Manipulation of the LEDs can then be achieve simply by changing the values held 
        progParams->LEDParams0.blink = 0;                // Set LED0 to continous one 
        progParams->LEDParams1.blink = 1;                // Set LED1 to blink
        // Without changing progParams->LEDParams1.time LED1 will blink at whatever period was last defined there
+
+      vTaskResume(blinkLEDHandle0); // Resume the LED task
+      vTaskResume(blinkLEDHandle1); // Resume the LED task
       }
    }
 
@@ -466,6 +611,9 @@ The ESP32 side of the MQTT transitions are handled using the Async MQTT library 
 Technical documentation\:
 `MQTT Topics & Best Practices <https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/>`_
 Library\: `Async MQTT Client <https://github.com/marvinroger/async-mqtt-client>`_
+Library dependancy\: `AsyncTCP <https://github.com/me-no-dev/AsyncTCP>`_
+
+.. Marvinroger seems to have his own version of the AsyncTCP library for some reason
 
 Current MQTT Structure
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -718,6 +866,7 @@ JSON implenetation for ESP32
 MQTTammendTask design
 
 .. code-block:: C++
+
    ESP.getEfuseMAC(); // This call will return the unique factory programed MAC address.
 
 
@@ -727,6 +876,40 @@ Interrupt functionality of the MFRC522 module
 The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnected so that is may be soldered to one of the ESP pins if desired. 
 
 If this is to be pursued RTOS function calls will need to be changed to their ISR safe equivalents.
+
+Optimizing RTOS Task Stack Size
+"""""""""""""""""""""""""""""""""
+Each RTOS task maintains its own stack and therefore on creation you must specify the depth of that stack. Determining how deep a stack to specify is somewhat of a guessing game,
+fortunately RTOS makes some API calls available to help determine just how much stack any given task needs: ``usTaskGetStackHighWaterMark()``.
+
+.. important::
+
+   ESP32 RTOS specifies its stack depth in bytes! Not words! (Vanilla RTOS is the reverse of this).
+
+The HighWaterMark API returns the minimum amount of **unused** stack of the stack depth allocated at task creation. It should be checked both at task creation and 
+during task execution. Using this API the stack depth can be wittled down to its safest minimum.
+
+.. code-block::
+   :caption: Example usuage of the HighWaterMark API
+   
+   void exampleTask(void *params){
+   UBaseType_t uxHighWaterMark;
+
+   uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL ); // Returns the minimum amount of unused stack space available since task creation
+   // It is a good idea to check the high water mark at task creation (outside of the for(;;))
+
+      for(;;){
+         // and during the task execution
+         uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL ); // Returns the minimum amount of unused stack space available since task creation
+
+         // depth of nested function calls can considerably increase the depth of stack you will need
+      }
+   }
+
+All RTOS tasks created during my Summer co-op of 2020 have HighWatermark calls in place but commented out.  **None of my tasks have had their stack depth optimized.**
+
+Other ways to know you've not specified enough stack? **Stack Overflow**
+This often manifests itself at the ESP32 going into a wild bootloop. 
 
 Shrinking program size for OTA
 """""""""""""""""""""""""""""""""""""

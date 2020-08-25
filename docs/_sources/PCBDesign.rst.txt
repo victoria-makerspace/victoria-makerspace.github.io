@@ -2,7 +2,13 @@
 PCB Design
 ============
 
-| Software of choice\: `kiCAD <https://kicad-pcb.org/>`_
+.. figure:: ./images/Rev02PCB.jpg
+   :align: center
+
+   Second physical revision of the tool access PCB (derived from toolAccess100Hx100WRev06).
+
+
+Designed in\: `kiCAD <https://kicad-pcb.org/>`_
 
 
 Learning PCB Design
@@ -28,18 +34,23 @@ Download the files, unzip them into your desired working directory, and then ope
 .. note::
    For either set of project files there are two sets of footprints and symbols that must be added to your kiCAD library paths\:
    
-   The footprints that were made in the course of my co-op live in the toolAccess.pretty folder.
+   1. Footprints made for this project - found in the toolAccess.pretty folder.
    
-   The footprints and symbols libraries I acquired via SnapEDA in the libraries folder.
+   2. Footprints and symbols libraries I acquired via SnapEDA - found in the libraries folder.
    
-   It should be noted that the SPADE_TERMINAL_6.3MM.kicad_model files for the spade terminal (aka. FastOn) were modified by the author to include surface mount solder pads in addition to through holes for additional rigidity.
+   It should be noted that the SPADE_TERMINAL_6.3MM.kicad_model files for the spade terminal (aka. FastOn) were modified by the author to include surface mount 
+   solder pads in addition to through holes for additional rigidity.
 
 
 **Most recent kiCAD Project files\:**
 :download:`toolAccessPrjMaster.zip <./files/toolAccessPrjMaster.zip>`
 
-These files are the most recent revision of the project used to produce the second iteration of the physical tool access prototype.
+These files are the most recent revision of the project used to produce the second iteration of the physical tool access prototype. Includes gerbers and drill files.
 
+**Gerbers and drill files for most recent deisgn \:**
+:download:`toolAcessMasterGerbers <./files/toolAccessMasterGerbers.zip>`
+
+Just the gerbers and drill files for the most recent revision of the PCB.
 
 **Complete Co-op 2020 kiCAD Project files\:**  
 :download:`toolAccessPrjComplete.zip <./files/toolAccessPrjComplete.zip>`
@@ -57,11 +68,11 @@ As this project is much larger with more revisions the file inheritance in the p
 :download:`makerSpaceSilkLogo.zip <./files/makerSpaceSilkLogo.zip>`
 
 
+
 AC creepage and clearance considerations
 -------------------------------------------
 
 Useful technical documentation:
-
 | `High Voltage PCB Design Creepage and Clearance Distance <https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance>`_
 | `Advanced Circuits PCB trace width calculator <https://www.4pcb.com/trace-width-calculator.html>`_
 | `Creepage calculator <https://www.smps.us/pcbtracespacing.html>`_
@@ -73,25 +84,19 @@ Clearance - is the shortest distance through air between two conductors. Environ
 
 Creepage - measures distances between two conductors along the surface of a high voltage PCB.  This requirement varies with the material of your PCB and can be increaed by slotting or routing air gaps between parts.
 
-Our high voltage components
-Our circuit has a small number of high voltage AC traces. Namely the spade terminals where AC power comes onto the boards, our HiLink Mains to 5V PSU, the protection circuitry for the PSU, and the relay contactor pins. These traces will operate at either 120V or 240V depending on the tool being controlled (the HiLink is capable of stepping down both). 
-
-.. figure:: ./images/creepVClear.png
-   :scale: 80
-   :align: center
-   :alt: visual representation of clearance vs creepage described above
-
-   Source\: `High Voltage PCB Design Creepage and Clearance Distance <https://resources.altium.com/p/high-voltage-pcb-design-creepage-and-clearance-distance>`_
-
+Our circuit has a small number of high voltage AC traces. Namely the spade terminals where AC power comes onto the boards, our HiLink Mains to 5V PSU, 
+the protection circuitry for the PSU, and the relay contactor pins. These traces will operate at either 120V or 240V depending on the tool being controlled 
+(the HiLink is capable of stepping down both). 
 
 Determining creepage spacing
+-----------------------------
 
-**Pollution degree**: Degree 1 - our circuit will be enclosed, dust proof, and indoors therefore falls under only dry non-conductive however, the fabrication shop does get very cold in the winter and can experience temperature swings over the course of the day so condensation is a possibility.
-**PCB material**: FR4
-**FR4 CTI**: 175 therefore material group IIIb.  
-**Max current (Signal lines)**: 40mA DC (ESP32 GPIO limit).
-**Max current (5V lines)**: 1A (DC limit of our PSU).
-**Max current (AC lines)**: 0.5A (AC limit of our PSU/Fuse threshold).
+* **Pollution degree**: Degree 1 - our circuit will be enclosed, dust proof, and indoors therefore falls under only dry non-conductive however, the fabrication shop does get very cold in the winter and can experience temperature swings over the course of the day so condensation is a possibility.
+* **PCB material**: FR4
+* **FR4 CTI**: 175 therefore material group IIIb.  
+* **Max current (Signal lines)**: 40mA DC (ESP32 GPIO limit).
+* **Max current (5V lines)**: 1A (DC limit of our PSU).
+* **Max current (AC lines)**: 0.5A (AC limit of our PSU/Fuse threshold).
 
 Given that our system could have either 120V or 240V supply we must plan for clearance and creepage at 240V. Additionally although our deployment mostly falls under pollution degree 1 using the spacing recommendations for spacing level 3 (where possible) will help us guard against edge cases.
 
@@ -112,15 +117,18 @@ Given that our system could have either 120V or 240V supply we must plan for cle
    Source: `Lazar's PCB Design Guide - Creepage <https://pcbdesign.smps.us/creepage.html>`_
    Units: mm.
 
-With these numbers in mind all AC traces were kept >1.25mm clear of one another and 5mm slots were routed between the high voltage AC side of the board and the low voltage DC side to achieve creepage distances of >4mm.
-
-
-Mounting Solutions
--------------------
-
-TBD
-
+With these numbers in mind all AC traces were kept >1.25mm clear of one another and 5mm slots were routed between the high voltage AC side of the board and the 
+low voltage DC side to achieve creepage distances of >4mm. Additionally all AC traces were excluded from the ground plane of the board.
 
 BOM
 -----
+
+Bodge Gallery
+---------------
+
+Prototype 1
+
+
+
+Prototype 2
 

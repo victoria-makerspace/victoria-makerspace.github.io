@@ -30,12 +30,14 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/language_data.js"></script>
+        <script src="https://unpkg.com/mermaid@8.4.8/dist/mermaid.min.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Assembly" href="Assembly.html" />
     <link rel="prev" title="Firmware" href="Firmware.html" /> 
 </head>
 
@@ -93,6 +95,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#collisions">Collisions</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="Assembly.html">Assembly</a></li>
 </ul>
 
             
@@ -160,8 +163,11 @@
             
   <div class="section" id="mfrc522-a-primer">
 <h1>MFRC522 - A Primer<a class="headerlink" href="#mfrc522-a-primer" title="Permalink to this headline">¶</a></h1>
-<p>Library: <a class="reference external" href="https://github.com/miguelbalboa/rfid#development">Miguelbalboa’s RFID for Arduino</a> This repo is currently frozen as it is not actively maintained as of 2019. It is however by far thee most frequently
-used Arduino library for RFID projects.</p>
+<p>This most commonly utilized Arduino library utilized for the MFRC522 is a library written by <a class="reference external" href="https://github.com/miguelbalboa/rfid#development">Miguel Balboa</a> .
+It has long since passed to community maintainers and has been frozen as of 2019.</p>
+<p>There is also a <a class="reference external" href="https://github.com/makerspaceleiden/rfid">rewrite</a> of the library done by members of the Leiden Makerspace with somewhat extended functionality and
+further documentation.</p>
+<p>I opted to use the Leiden Makerspace library.</p>
 <p>Technical documentation:</p>
 <ol class="arabic simple">
 <li><p><a class="reference external" href="https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf">MFRC522 Datasheet</a></p></li>
@@ -339,6 +345,8 @@ the timeout to occur.</p>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Assembly.html" class="btn btn-neutral float-right" title="Assembly" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="Firmware.html" class="btn btn-neutral float-left" title="Firmware" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

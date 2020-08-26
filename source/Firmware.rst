@@ -281,20 +281,10 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 
 
 
-**RTOS Task Summary**
+**RTOS RFID Tasks**
 
-
-+-------------------+---------------------+------------------------------+------------------------------+-------------------+
-| Task Name         | WaitBits()          | SetBits()                    | vTaskDelay()                 | Other             |
-+===================+=====================+==============================+==============================+===================+
-| pollNewTask()     | N/A                 | If(connected) CARD_BIT_0     | MS_POLL_TIMER                |                   |
-|                   |                     | else CARD_BIT_0 | AUTH_BIT_1 |                              |                   |
-+-------------------+---------------------+------------------------------+------------------------------+-------------------+
-| pollNewTask()     | N/A                 | If(connected) CARD_BIT_0     |                              |                   |
-|                   |                     | else CARD_BIT_0 | AUTH_BIT_1 |                              |                   |
-+-------------------+---------------------+------------------------------+------------------------------+-------------------+
-
-**RTOS Task List**
+Library\: `MFRC522 <https://github.com/makerspaceleiden/rfid>`_ - This version of the MFRC522 library is a rewrite of the Miguel Balboa library by members of the Leiden 
+Makerspace.
 
 .. pollNewTask () 
    waitBits = none
@@ -307,76 +297,32 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
      pub uid for auth
    vTaskSuspend(NULL)
 
-.. code-block:: C++
-   :linenos:
-   :caption: Polling for New Cards
+.. topic:: ``pollNewTask (void *params)``
 
-   void pollNewTask (void *params){
-      metaStruct *progParams = (metaStruct*) params;
-      uint32_t notificationValue;
+   ``pollNewTask()`` is the entry point for the RFID control loop. Once it detects a new card it suspends itself. It is very important it is resumed at the appropriate places for the control loop to keep
+   functioning (ie. once we have entered ``timeoutTask``). However, this also means that we can disable this task as a means of suspending the RFID functionality, see the EstopFire and 
+   EstopClear tasks for more details.
 
-      for(;;){
-         vTaskDelay(MS_POLL_TIMER_PERIOD); // Wait for at least he polling time
+   This task also receives a task notification. This notification is made from ``onMqttMessage()`` when a card is denied by the server. The LEDParam structs are out of scope of the MQTT callback functions 
+   of the AsynMQTTClient library and I could not figure out a way of passing them the value. Instead ``pollNewTask()``, which is also resumed when a card is denied, is notified so that it may change the LEDParams
+   to blinking red.
 
-         notificationValue = ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS(300));
-         if(notificationValue == 1 ){          // Notification from onMqttMessage that a card was denied
-           Serial.println("Notification: Card denied");
-           // Set both LEDS to Red
-           progParams->LEDParams0.myColour = CRGB::Red; 
-           progParams->LEDParams1.myColour = CRGB::Red;
-           // Set both LEDs to not blink
-           progParams->LEDParams0.blink = 1;
-           progParams->LEDParams1.blink = 1;
-           vTaskResume(blinkLEDHandle0);
-           vTaskResume(blinkLEDHandle1);
-         }
+   When WiFi/MQTT is connected only CARD_BIT_0 is set in ``pollNewTask()`` and AUTH_BIT_1 is set elsewhere in ``onMqttMessgae()`` based the MQTT payload of ``tool/auth/rsp``. 
+   When a WiFi or MQTT disconnection event occurs WIFIOUT_BIT_7 is set. This is detected by bitmasking ``xEventGroupGetBits(rfidStatesGroup)`` to check the 7th bit (WIFIOUT_BIT_7)
+   to see if it has been set. If the WIFIOUT_BIT_7 has been set both CARD_BIT_0 and AUTH_BIT_1 are set within ``pollNewTask()`` without server authorization. 
+   This is where future implementation for flash memory logging should be placed.
 
-         if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial ()){ // Poll for new cards BUT only when CARD_BIT_0 is not set
+   RTOS API calls summary
 
-            mfrc522.PICC_HaltA(); // We have read the card now be halt it
-            xEventGroupSetBits(rfidStatesGroup, CARD_BIT_0);                     // Now that we have detected a card set CARD_BIT_0 to unblock some Tasks
-
-            // We need to check if the card's UID is authorized
-
-            // First, check if to make sure the WiFi outtage flag hasn't been thrown
-            if(xEventGroupGetBits(rfidStatesGroup) == 129){ // If the WiFi is out simply grant access and log
-               Serial.println("WiFi is out");
-               xEventGroupSetBits(rfidStatesGroup, AUTH_BIT_1); // If WiFi/MQTT server cannot be reached grant user access regardless of authorization
-               // Code for logging should go here.
-            }
-
-         else{ // If the Wifi isn't out ask server for authorization
-            progParams->card.uidStrLen = (mfrc522.uid.size*3); // Our string length will be 3x the length the equivalent byte value
-            byteToHexStr(mfrc522.uid.uidByte, mfrc522.uid.size, progParams->card.uidStr, progParams->card.uidStrLen); // Now convert the byte in the mfrc522 struct to a string and dump it into our struct string     
-
-            // Publish our uid string to find out if its authorized
-            uint16_t packetIdPub1 = mqttClient.publish("rfid/auth/req", 1, false, progParams->card.uidStr); // Publish the read UID to rfid/auth/req. BE VERY CAREFUL TO NOT SET THE RETAIN FLAG
-            Serial.print("Publishing at QoS 1, packetId: ");
-            Serial.println(packetIdPub1);
-          }
-         // Now suspend our polling task until we hear back from MQTT broker OR if WiFi is out proceed with the request of the RFID control loop
-         vTaskSuspend ( NULL ); // Suspend ourselves. No need to keep polling now that there is a card
-       }
-
-       else {
-         // No new card, keep polling for new cards
-        }
-      }
-   }
-
-
-``pollNewTask()`` is the entry point for the RFID control loop. Once it detects a new card it suspends itself. It is very important it is resumed at the appropriate places for the control loop to keep
-functioning (ie. whenever we return to state noCard, ``timeoutTask``). However, this also means that we can disable this task as a means of suspending the RFID functionality, see the EstopFire and 
-EstopClear tasks for more details.
-
-This task also checks for a task notification on line 7. This notification is made from ``onMqttMessage()`` when a card is denied by the server. The LEDParam structs are out of scope of the MQTT callback functions 
-of the AsynMQTTClient library and I could not figure out a way of passing them the value. Instead ``pollNewTask()``, which is also resumed when a card is denied, is notified so that it may change the LEDParams
-to blinking red.
-
-When WiFi/MQTT is connect only CARD_BIT_0 is set in ``pollNewTask()`` and AUTH_BIT_1 is set elsewhere in ``onMqttMessgae()``. 
-When a WiFi or MQTT disconnection event occurs WIFIOUT_BIT_7 is set. This is detected on line 9 and allows for both CARD_BIT_0 and AUTH_BIT_1 to be set within ``pollNewTask()`` without server authorization. 
-This is where future implementation for flash memory logging should be placed.
-
+   +---------------------+------------------------------+------------------------------+-------------------+-------------------------------+--------------+
+   | WaitBits()          | SetBits()                    | GetBits ()                   | vTaskDelay()      | TaskNotifyTake()              | vTaskSuspend |
+   +=====================+==============================+==============================+===================+===============================+==============+
+   | N/A                 | If WIFIOUT_BIT_7 not set     |                              | MS_POLL_TIMER     | notificationValue == 1        | NULL         |  
+   |                     | CARD_BIT_0                   |                              |                   | toggle LEDparams   \n         |              |
+   +---------------------+------------------------------+                              +                   + Red                           +              |
+   | N/A                 | If WIFIOUT_BIT_7 is set      | Used to check WIFIOUT_BIT_7  |                   | blinkTemp                     |              |
+   |                     | else CARD_BIT_0 | AUTH_BIT_1 |                              |                   |                               |              |
+   +---------------------+------------------------------+------------------------------+-------------------+-------------------------------+--------------+
 
 
 .. closeRelayTask()
@@ -384,46 +330,17 @@ This is where future implementation for flash memory logging should be placed.
    setBits = RELAY_BIT_2
    vTaskSuspend ( NULL )
 
-.. code-block:: C++
-   :linenos:
+.. topic:: ``closeRelayTask(void *params)``
 
-   void closeRelayTask (void *params){
+   Unblocks once CARD_BIT_0 and AUTH_BIT_1 are set. It closes the relay, sets the RELAY_BIT_2 (not currently used for anything), changes the LEDs to a solid green to 
+   indicate this to the user. The task then suspends itself once all of this has been achieved. This task is resumed in ``timeoutTask()``.
+
+   +-----------------------+---------------+------------------------------+-----------------+
+   | WaitBits()            | SetBits()     | vTaskSuspend ()              | vTaskResume ()  +
+   +=======================+===============+==============================+=================+
+   | CARD_BIT_0|AUTH_BIT_1 | RELAY_BIT_2   | NULL                         | blinkLEDHand0/1 | 
+   +-----------------------+---------------+------------------------------+-----------------+
    
-     metaStruct *progParams = (metaStruct*) params; // Should be static/const maybe?
-   
-     const TickType_t xTicksToWait = portMAX_DELAY; // Wait forever 
-     const EventBits_t xBitsToWaitFor = (CARD_BIT_0 | AUTH_BIT_1); // This creates a mask for checking our bits. To make mask we always use |
-     EventBits_t uxBits;                                          // But to check a mask we always use &
-   
-     for(;;){
-       uxBits = xEventGroupWaitBits(rfidStatesGroup, xBitsToWaitFor, pdFALSE, pdTRUE, xTicksToWait);
-
-       Serial.println("I'm going to close the relay!");
-
-       // Set both LEDS to Green
-       progParams->LEDParams0.myColour = CRGB::Green; 
-       progParams->LEDParams1.myColour = CRGB::Green;
-       // Set both LEDs to not blink
-       progParams->LEDParams0.blink = 0;
-       progParams->LEDParams1.blink = 0;
-
-       Serial.println("Light the lights!");
-       vTaskResume(blinkLEDHandle0); // Resume the LED task
-       vTaskResume(blinkLEDHandle1); // Resume the LED task
-
-
-       digitalWrite(RELAY_PIN, HIGH); // Close the relay
-
-        // Set relayBit
-       xEventGroupSetBits(rfidStatesGroup, RELAY_BIT_2);
-
-       vTaskSuspend ( NULL ); // Suspend ourselves. No need to keep polling for new now that we know a card is there
-      }
-     }
-
-``closeRelayTask`` unblocks once CARD_BIT_0 and AUTH_BIT_1 are set. It closes the relay, sets the RELAY_BIT_2 (not currently used for anything), changes the LEDs to a solid green to indicate this to the user.
-The task then suspends itself once all of this has been achieved. This task is resumed in ``timeoutTask()``.
-
 .. pollPresTask ()
    waitBits = CARD_BIT_0 | AUTH_BIT_1
    SemaphoreGive SPIMutexHandle
@@ -433,42 +350,23 @@ The task then suspends itself once all of this has been achieved. This task is r
       else
          clearBits = CARD_BIT_0 | AUTH_BIT_1
          setBits = TIMEOUT_BIT_3
-         vTaskResume pollNewHandle
    SemaphoreTake SPIMutexHandle
 
-.. code-block:: C++
-   :linenos:
+.. topic:: ``pollPresTask(void *params)``
 
-   void pollPresTask (void *params){
-     //UBaseType_t uxHighWaterMark;
-     EventBits_t uxBits;
-     const TickType_t xTicksToWait = portMAX_DELAY; // Wait forever 
-     const EventBits_t xBitsToWaitFor = (CARD_BIT_0 | AUTH_BIT_1 ); // This creates a mask for checking our bits. To make mask we always use |
-     byte resultWake;
-     byte bufferATQA[2];
-     byte bufferSize = sizeof(bufferATQA);
-   
-     metaStruct *progParams = (metaStruct*) params; 
+   Unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. Because both ``pollPresTask``\  and ``collPollTask`` occur in the same state and both utilize the SPI bus a Mutex is given/taken by the two Tasks. 
+   If ``pollPres()`` detects that a card has left the RF field the CARD_BIT_0 and AUTH_BIT_1 is cleared then the TIMEOUT_BIT_3 is set. This unblocks the ``timeoutTask()`` while placing both
+   ``pollPresTask()`` and ``collPollTask()`` back in the blocked state. 
 
-     for(;;){
-       // Wait for CARD_BIT_0 and AUTH_BIT_1 to be set before proceeding
-       uxBits = xEventGroupWaitBits(rfidStatesGroup, xBitsToWaitFor, pdFALSE, pdTRUE, xTicksToWait);
-   
-       xSemaphoreTake(SPIMutexHandle, portMAX_DELAY); // Must take the SPIMutex if you wish to proceed. This prevents presPoll and collPoll from trying to access SPI bus at same time
-       
-       vTaskDelay(MS_POLL_TIMER_PERIOD); // Only poll every 100ms?
-   
-       pollPres(progParams, &rfidStatesGroup, &blinkLEDHandle0, &blinkLEDHandle1, &pollNewHandle);
-   
-       xSemaphoreGive(SPIMutexHandle); // Now give up the Mutex handle so collPoll may execute
-     }
-   }
+   LEDs are set to blink blue when a card removal is detected.
 
-``pollPresTask``  unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. Because both ``pollPresTask``\  and ``collPollTask`` occur in the same state and both utilize the SPI bus a Mutex is given/taken by the two Tasks. 
-If ``pollPres()`` detects that the authorized card has left the RF field the CARD_BIT_0 and AUTH_BIT_1 is cleared then the TIMEOUT_BIT_3 is set. This unblocks the ``timeoutTask()`` while placing both
-``pollPresTask()`` and ``collPollTask()`` back in the blocked state. 
 
-LEDs are set to blink red when a card is removal is detected.
+   +-------------------------+---------------+-------------------------+----------------------+-----------------------+-----------------+
+   | WaitBits()              | SetBits()     | ClearBits ()            | vTaskDelay()         | SemaphoreGive/Take () | vTaskResume ()  +
+   +=========================+===============+=========================+======================+=======================+=================+
+   | CARD_BIT_0 | AUTH_BIT_1 | TIMEOUT_BIT_3 | CARD_BIT_0 | AUTH_BIT_1 | MS_POLL_TIMER_PERIOD | SPIMutexHandle        | blinkLEDHand0/1 |
+   +-------------------------+---------------+-------------------------+----------------------+-----------------------+-----------------+
+   
 
 .. collPollTask ()
    waitBits = CARD_BIT_0 | AUTH_BIT_1
@@ -476,41 +374,22 @@ LEDs are set to blink red when a card is removal is detected.
       if coll 
          clearBits = CARD_BIT_0 |  AUTH_BIT_1
          setBits = TIMEOUT_BIT_3 | COLL_BIT_4
-         vTaskResume pollNewHandle
       else
       // do nothing
    SemaphoreGive SPIMutexHandle
 
-.. code-block:: C++
-   :linenos:
+.. topic:: ``collPollTask(void *8*params)``
 
-   void collPollTask (void *params){ // Must sync with pollPres
+   Unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. It gives/takes a mutes with ``pollPresTask()`` to avoid conflicting access of the SPI bus. If a collision is detected by ``collPolling()``
+   CARD_BIT_0 | AUTH_BIT_1 are cleared and the TIMEOUT_BIT_3 | COLL_BIT_4 are set in order to execute a transition to the timeout state. 
 
-     metaStruct *progParams = (metaStruct*) params;
+   LEDs are set to blink purple to indicate a collision has been detected.
 
-     EventBits_t uxBits;
-     const TickType_t xTicksToWait = portMAX_DELAY; // Wait forever 
-     const EventBits_t xBitsToWaitFor = (CARD_BIT_0 | AUTH_BIT_1 ); // This creates a mask for checking our bits. To make mask we always use |
-     char collCounter = 0;
-   
-     for(;;){
-
-       uxBits = xEventGroupWaitBits(rfidStatesGroup, xBitsToWaitFor, pdFALSE, pdTRUE, xTicksToWait); // Block until card and auth bits are set
-
-       xSemaphoreTake(SPIMutexHandle, portMAX_DELAY); // Must have the SPI mutex inorder to proceed.
-
-       // Collision polling function call
-       collPolling (progParams, &blinkLEDHandle0, &blinkLEDHandle1, &rfidStatesGroup, &pollNewHandle);
-
-       xSemaphoreGive(SPIMutexHandle); // Now give up the Mutex handle so presPoll may execute
-     }
-   }
-
-``collPollTask()`` unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. It gives/takes a mutes with ``pollPresTask()`` to avoid conlficting access of the SPI bus. If a collision is detected by ``collPolling()``
-CARD_BIT_0 | AUTH_BIT_1 are cleared and the TIMEOUT_BIT_3 | COLL_BIT_4 are set inorder to execute a transition to the timeout state. 
-
-LEDs are set to blink purple to indicate a collision has been detected.
-
+   +-------------------------+----------------------------+-------------------------+----------------------+-----------------------+-----------------+
+   | WaitBits()              | SetBits()                  | ClearBits ()            | vTaskDelay()         | SemaphoreGive/Take () | vTaskResume ()  +
+   +=========================+============================+=========================+======================+=======================+=================+
+   | CARD_BIT_0 | AUTH_BIT_1 | TIMEOUT_BIT_3 | COLL_BIT_4 | CARD_BIT_0 | AUTH_BIT_1 | ?                    | SPIMutexHandle        | blinkLEDHand0/1 |
+   +-------------------------+----------------------------+-------------------------+----------------------+-----------------------+-----------------+
 
 .. timeoutTask ()
    waitBits = TIMEOUT_BIT_3
@@ -520,16 +399,64 @@ LEDs are set to blink purple to indicate a collision has been detected.
    digitalWrite RelayOpen
    clearBits = TIMEOUT_BIT_3 | RELAY_BIT_2
 
-**timeoutTask**
-``timeoutTask`` unblocks on the TIMEOUT_BIT_3. The first thing that is done is publishing to the MQTT ``rfid/auth/eou`` (end of use) topic. This is done first to minimize
-the chances of this task renetering a blocked state due to a new card 
+.. topic:: ``timeoutTask (void *params)``
+   
+   Unblocks on the TIMEOUT_BIT_3. The first thing that is done is publishing to the MQTT ``rfid/auth/eou`` (end of use) topic. This is done before
+   ``pollNewTask()`` is resumed so that it cannot be interrupted by introduction of a new card. Next ``closeRelayTask`` is resumed so that if a new card is introduced
+   the relay can be closed. A bitmask operation is carried out against ``xEventGroupGetBits`` to determine if both TIMEOUT_BIT_3 and COLL_BIT_4 are set.
+
+   If just TIMEOUT_BIT_3 is set ``pollNewTask()`` is resumed so that a new card can be introduced and authorized without the relay being opened.
+
+   If TIMEOUT_BIT_3 and COLL_BIT_4 is set the full timeout is enforced and the relay is re-opened before ``pollNewTask()`` is resumed.
+
+   When the full timeout occurs RELAY_BIT_2, TIMEOUT_BIT_3, and COLL_BIT_4 are all cleared.
+
+   +-------------------------+-----------------------------+--------------------------------+-------------------+-----------------+
+   | WaitBits()              | ClearBits()                 | GetBits ()                     | vTaskDelay()      | vTaskResume ()  +
+   +=========================+=============================+================================+===================+=================+
+   | TIMEOUT_BIT_3           | RELAY_BIT_2 | TIMEOUT_BIT_3 | Used to check if TIMEOUT_BIT_3 | MS_TIMEOUT_PERIOD | blinkLEDHand0/1 |
+   |                         |                             +                                +                   +                 +                                
+   |                         |                             | and/or COLL_BIT_4 is set       |                   | pollNewHandle   |
+   +-------------------------+-----------------------------+--------------------------------+-------------------+-----------------+
+
+**EStop Tasks**
 
 .. Ignore for now
    eStopSetTask ()
    waitBits = ESTOPFIRE_BIT_5
 
+.. topic:: ``eStopFireTask (void *params)``
+
+   Unblocks on ESTOPFIRE_BIT_5 which is set in ``onMqttMessage()`` on receipt of ``rfid/estop/fire``. A ``xEventGroupGetBits()`` is used to check the state of the hardware. If
+   no bits are set ``pollNewTask()`` is suspended cutting off the access point to the RFID functionality. If any of the EventBits are set all the bits are cleared, the relay is 
+   opened and then ``pollNewTask()`` is suspended. The LEDs are then set to flash yellow.
+
+   The ESTOPSET_BIT_6 auto clears on the the successful ``xEventGroupWaitBits()``. 
+
+   +-------------------------+--------------------------------+-------------------------------------------------------------------+-----------------+
+   | WaitBits()              | GetBits ()                     | ClearBits()                                                       | vTaskResume ()  +
+   +=========================+================================+===================================================================+=================+
+   | ESTOPFIRE_BIT_5         | If no bits set                 | N/A                                                               | blinkLEDHand0/1 |
+   +                         +--------------------------------+-------------------------------------------------------------------+                 +
+   |                         | If bit other than ESTOPbits set| CARD_BIT_0 | AUTH_BIT_1 | RELAY_BIT_2 | TIMEOUT_BIT_3 | COLL_BIT_4| pollNewHandle   |
+   +-------------------------+--------------------------------+-------------------------------------------------------------------+-----------------+
+
 .. eStopClearTask ()
    waitBits = ESTOPCLEAR_BIT_6
+
+.. topic:: ``eStopClearTask (void *params)``
+
+   Unblocks on ESTOPCLEAR_BIT_6 which is set in ``onMqttMessage()`` on receipt of ``rfid/estop/fire``. This task simply turns off the LEDs and resumes ``pollNewTask()``.
+   The ESTOPCLEAR_BIT_6 auto clears on the the successful ``xEventGroupWaitBits()``.
+   
+   +--------------------------+-----------------+
+   | WaitBits()               | vTaskResume ()  +
+   +==========================+=================+
+   | ESTOPCLEAR_BIT_5         | blinkLEDHand0/1 |
+   +                          +                 +
+   |                          | pollNewHandle   |
+   +--------------------------+-----------------+
+
 
 
 COM12999 - Addressable LEDs
@@ -594,7 +521,7 @@ Manipulation of the LEDs can then be achieve simply by changing the values held 
       for(;;){
        progParams->LEDParams0.myColour = CRGB::Red;     // Set LED0 to Red
        progParams->LEDParams1.myColour = CRGB::Purple;  // Set LED1 to Purple
-       progParams->LEDParams0.blink = 0;                // Set LED0 to continous one 
+       progParams->LEDParams0.blink = 0;                // Set LED0 to continuous one 
        progParams->LEDParams1.blink = 1;                // Set LED1 to blink
        // Without changing progParams->LEDParams1.time LED1 will blink at whatever period was last defined there
 
@@ -637,149 +564,29 @@ MQTT functions
 As mentioned above the MQTT functions are those included in the ``FullyFeatured-ESP32.ino`` example included with the library. Most of them remain unmodified, the exceptions to this are
 ``connectToWifi()``,  ``WiFiEvent()``, ``onMqttConnect()``, and ``onMqttMessage()`` . As such I will only discuss these functions.
 
-``connectToWifi()`` - WiFi credentials must be placed or accessed from here.
-
-``WiFiEvent()`` - WIFIOUT_BIT_7 is set here when disconnection occurs
-
-``onMqttConnect()`` - Hardcoded subscriptions can be placed here.
-
-``onMqttMessage()`` - MQTT payloads from subscriptions enter here. Payloads must be read and operated on inside this function.
-
-.. code-block:: 
-   :linenos:
+.. topic:: ``connectToWifi()``
    
-   void connectToWifi() {
-      Serial.println("Connecting to Wi-Fi...");
-      WiFi.begin(preferences.getString("ssid").c_str(), preferences.getString("password").c_str()); // Access WiFi creds stored in NVS
-   }
+   WiFi credentials are accessed here. Create your own ``credentials.h`` with ``#define SSID, PASS``.
 
-Wifi credentials must be placed or accessed here. Accessing via the non-volatile storage currently shown is not practical for mass deployment as this would require manually caching it on all deployed units.
-An alternative but similar locally cached system should be employed.
+.. topic:: ``WiFiEvent()`` 
 
+   WIFIOUT_BIT_7 is set here when disconnection occurs to change behaviour of ``pollNewTask()``
 
-.. code-block:: C++
+.. topic:: ``onMqttConnect()`` 
+
+   Hardcoded subscriptions can be placed here. Ideally in the future have the subscriptions read out of a modifyable variable/struct/JSON doc would
+   allow for modification of those subscriptions. See Whomami implenetation in Roadmap to Further Development section. 
+
+.. topic:: ``onMqttMessage()`` 
    
-   void WiFiEvent(WiFiEvent_t event) {
-    Serial.printf("[WiFi-event] event: %d\n", event);
-    switch(event) {
-    case SYSTEM_EVENT_STA_GOT_IP:
-        Serial.println("WiFi connected");
-        Serial.println("IP address: ");
-        Serial.println(WiFi.localIP());
-        connectToMqtt();
-        // Clear the WiFi outage bit
-        xEventGroupClearBits(rfidStatesGroup, WIFIOUT_BIT_7);
-        break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-        Serial.println("WiFi lost connection");
-        xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
-		  xTimerStart(wifiReconnectTimer, 0); // Start wifiReconnectTimer immediately
-
-        // Set WiFi outage bit to change our authorization scheme
-        xEventGroupSetBits(rfidStatesGroup, WIFIOUT_BIT_7);
-        break;
-     }
-   }
-
-EventBits used to change behaviour based on WiFi connectivity must be toggled within this function. This is necessary so that in the event of a WiFi or server outtage the tools remain usable (ie. system 
-defaults to granting access to anyone who presents a card) and to shift to logging those access requests in flash memory.
-
-.. code-block:: C++
-   :caption: onMqttConnect 
-
-   void onMqttConnect(bool sessionPresent) {
-      Serial.println("Connected to MQTT.");
-      Serial.print("Session present: ");
-      Serial.println(sessionPresent);
-
-      // Sub to the rfid topic
-      uint16_t packetIdSub2 = mqttClient.subscribe("rfid/auth/rsp", 2);
-      Serial.print("Subscribing at QoS 2, packetId: ");
-      Serial.println(packetIdSub2);
-   
-      // Sub to the estop topic
-      uint16_t packetIdSub3 = mqttClient.subscribe("rfid/estop", 2);
-      Serial.print("Subscribing at QoS 2, packetId: ");
-      Serial.println(packetIdSub3);
-   }
-
-Hardcoded subscriptions to be made on boot should be placed in this function. However, subscriptions can made made elsewhere in code using same syntax.
-
-
-.. code-block:: C++
-
-   void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
-      Serial.println("Publish received.");
-      Serial.print("  topic: ");
-      Serial.println(topic);
-      Serial.print("  qos: ");
-      Serial.println(properties.qos);
-      Serial.print("  dup: ");
-      Serial.println(properties.dup);
-      Serial.print("  retain: ");
-      Serial.println(properties.retain);
-      Serial.print("  len: ");
-      Serial.println(len);
-      Serial.print("  index: ");
-      Serial.println(index);
-      Serial.print("  total: ");
-      Serial.println(total);
-   
-      int topicLength = (strlen(topic));
-      int payloadLength = (strlen(payload));
-      const char * rsp = "rfid/auth/rsp";
-      const char * estop = "rfid/estop";
-
-      // const char * subs[30];
-      // sprintf(subs, "rfid/%s/sub", mqttClient.clientId)
-      
-      /* Possible pitfalls:
-      Retained messages will fall straight through into this on boot!!!
-      Be very careful how you use retains them.
-      */
-
-      // refid/auth
-      // This should maybe be functionized for neatness
-      if ((strncmp (topic, rsp, topicLength)) == 0){ // strncmp returns true if exact match
-      
-        Serial.println("We have a matching topic");
-        
-        if (((strncmp (payload, "auth", 4)) == 0)){ // Read only four indices just incase the payload is not null terminated
-          Serial.println("authorized!");
-          xEventGroupSetBits(rfidStatesGroup, AUTH_BIT_1); //Set the authorized bit
-          xEventGroupClearBits(rfidStatesGroup, TIMEOUT_BIT_3); // Clear the timeout bit just in case we're in a timeout
-        }
-        else if(((strncmp (payload, "denied", 6)) == 0)){
-          Serial.println("denied!");
-          xEventGroupClearBits(rfidStatesGroup, (CARD_BIT_0|AUTH_BIT_1)); // Revoke card and authorization bit if an unauthorized card arrives. 
-          vTaskResume(pollNewHandle); // Resume polling for new cards
-          
-        }
-        else if(((strncmp (payload, "seekiosk", 8)) == 0)){
-          Serial.println("seekiosk!");
-          // Set kiosk bit?
-        }
-      }
-      // rfid/estop
-      else if ((strncmp (topic, estop, topicLength) == 0)){
-        if (((strncmp (payload, "fire", 4)) == 0)){ // Read only four indices just incase the payload is not null terminated
-          Serial.println("Fire the eStop!");
-          xEventGroupSetBits(rfidStatesGroup, ESTOPFIRE_BIT_5); 
-          
-        }
-        else if(((strncmp (payload, "clear", 5)) == 0)){
-          Serial.println("Clear the eStop!");
-          xEventGroupSetBits(rfidStatesGroup, ESTOPCLEAR_BIT_6); 
-        }
-      }
-   }
-
-onMqttMessage() is where published messages that our ESP32 is subsribed to arrive. This is also where EventBits that can only be set via server authorization are set (eg. AUTH_BIT_1,
-ESTOPCLEAR_BIT_6, and ESTOPFIRE_BIT_5).
-
+   MQTT payloads from subscriptions enter here. Payloads are read and operated on resulting in the possible setting or clearing of various EventBits: 
+   Bits set: AUTH_BIT_1, ESTOPCLEAR_BIT_6, and ESTOPSET_BIT_6 can all be set within this function.
+   Bits cleared: TIMEOUT_BIT_3, CARD_BIT_0, AUTH_BIT_1
+   Task notification: 0'th bit of ``pollNewHandle`` is set to notify the ``pollNewTask()`` that a card has been denied and to blink red LEDs at the user.
 
 .. warning::
-   Care should be taken using ``strncmp()``. Specifically, the ``size_t num`` parameter should be utilized where possible as payloads may be coming from non-null terminating languages such as Java-script.
+   Care should be taken using ``strncmp()`` to evaluate topics and payloads. Specifically, the ``size_t num`` parameter should be utilized where possible as payloads may
+   be coming from non-null terminating languages such as Java-script.
 
 
 Proposed Future MQTT Topic Structure
@@ -864,6 +671,8 @@ Requirements:
 
 JSON implenetation for ESP32
 MQTTammendTask design
+Modificaiton of ``onMqttMessage()`` and ``onMqttConnect()`` to accept pointers through the ``void * pvTimerID`` in their ``xTimerCreate()`` call. This will be needed to give
+scope to the callback functions so that MQTT topics can be read out of a struct or JSON doc or whatever implementation is decided upon.
 
 .. code-block:: C++
 
@@ -873,7 +682,7 @@ MQTTammendTask design
 Interrupt functionality of the MFRC522 module
 """"""""""""""""""""""""""""""""""""""""""""""
 
-The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnected so that is may be soldered to one of the ESP pins if desired. 
+The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnected so that is may be connected if desired. 
 
 If this is to be pursued RTOS function calls will need to be changed to their ISR safe equivalents.
 
@@ -909,7 +718,7 @@ during task execution. Using this API the stack depth can be wittled down to its
 All RTOS tasks created during my Summer co-op of 2020 have HighWatermark calls in place but commented out.  **None of my tasks have had their stack depth optimized.**
 
 Other ways to know you've not specified enough stack? **Stack Overflow**
-This often manifests itself at the ESP32 going into a wild bootloop. 
+This usually manifests itself at the ESP32 going into a wild bootloop that is viewable on the serial monitor.
 
 Shrinking program size for OTA
 """""""""""""""""""""""""""""""""""""
@@ -917,10 +726,40 @@ Shrinking program size for OTA
 For the over the air updates functionality to be used our program must occupy <50% of flash memory. As of 2020/08/07 it occupies ~59%. Additionally as part of the OTA process logs from tools 
 will have to be requested and transmitted before the OTA is initiated as this process will likely overwrite the SPIFFS partition.
 
+This is most likely to be achieved by replacing as much of the Arduino C++ code with straight C code that utilizes the ESP32 native API.
+
+Implementation of onboard logging
+"""""""""""""""""""""""""""""""""""
+
+In the event of an MQTT or WiFi disconnection event the toolAccess system grants unconditional access to whoever presents an RFID card to it. Ideally these UIDs would also be\
+logged in internal flash memory for transmission to server upon reconnection. In design discussions it is presumed that this will likely be an uncommon event and therefore 
+should not take a heavy toll on the limited read/write cycles of the ESP32 flash memory.
+
+**How this should work**
+
+1. A WiFi/MQTT disconnection event is detected
+2. toolAccess system changes behaviour to grant unconditional access.
+3. toolAccess system logs relative onboard time of disconnection event as first entry in a log file.
+4. Every card that is granted access has its UID logged in the same file.
+5. WiFi/MQTT connection re-established.
+6. toolAccess system changes behaviour back to conditional access.
+7. Last entry in log file is relative time of disconnection event.
+8. Sever asks toolAccess system if it has logs.
+9. toolAccess system responds with Y, size of logs/N
+10. Server asks for logs.
+11. toolAccess system transmits logs and deletes log file.
+
+**Roadblocks**
+
+1. SPIFFs has stream utility inheritances that during the Summer of 2020 I could not quite get my head around. However, this means that they will likely play ball with the Arduino
+JSON library which would make writing and reading the log file much clearer at the cost of the log file being much larger.
+
+2. Care would have to be taken to ensure that this functionality does not interefer with the OTA update requirement >50% of flash memory needing to be free.
+
 Desired Future Features
 """""""""""""""""""""""""
 
 1. Addition of other sensors
 
-## Potential Pitfalls
+
 

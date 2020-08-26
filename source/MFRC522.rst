@@ -2,9 +2,13 @@
 MFRC522 - A Primer
 ==================
 
-Library\: `Miguelbalboa's RFID for Arduino <https://github.com/miguelbalboa/rfid#development>`_ This repo is currently frozen as it is not actively maintained as of 2019. It is however by far thee most frequently
-used Arduino library for RFID projects.
+This most commonly utilized Arduino library utilized for the MFRC522 is a library written by `Miguel Balboa <https://github.com/miguelbalboa/rfid#development>`_ .
+It has long since passed to community maintainers and has been frozen as of 2019.
 
+There is also a `rewrite <https://github.com/makerspaceleiden/rfid>`_ of the library done by members of the Leiden Makerspace with somewhat extended functionality and
+further documentation. 
+
+I opted to use the Leiden Makerspace library.
 
 Technical documentation:
 

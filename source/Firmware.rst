@@ -39,8 +39,10 @@ Learning RTOS on the ESP32
 
 1. `ESP32 Meet-up FreeRTOS <https://www.youtube.com/watch?v=E9FY-IOvC3Q>`_ I watched this on 1.75X to give me the basic gist of the RTOS API
 2. `Mastering the FreeRTOS Real Time Kernel <https://www.freertos.org/wp-content/uploads/2018/07/161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf>`_ This is an official freeRTOS resource. The ESP RTOS is based on it but is not exactly the same. I recommend skipping striaght to the section on Task Management.
-3. `ESP-IDF FreeRTOS SMP Changes <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/freertos-smp.html>`_ Espressif's documentation for the differences bewteen ESP32's RTOS and vanilla freeRTOS
+3. `ESP-IDF FreeRTOS SMP Changes <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/freertos-smp.html>`_ Espressif's documentation for the differences between ESP32's RTOS and vanilla freeRTOS
 4. `ESP32 FreeRTOS API Reference <https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos.html>`_ The Espressif documentation for their flavour of FreeRTOS
+5  `How to pass pointers to Software Timers <https://www.freertos.org/FreeRTOS_Support_Forum_Archive/May_2016/freertos_xTimerCreate_vTimerCallback_b3906645j.html>`_ Passing pointers pointers to software timer callback 
+functions is also possible but is not made as clear by the official documentation.
 
 .. warning::
    Do not solely utilizes the freeRTOS documentation without referencing Espressif's ESP32 specific RTOS documentation. 
@@ -86,21 +88,10 @@ help functions they may need to call.
         CRGB myColour; 
     } LEDParams;
 
-    // Struct for holding timer information
-    typedef struct{
-        uint32_t ms_timeLast = 0;  // millisecond timer for holding last time was in a function.
-        uint32_t ms_timeOut = 0; // Holds ms_timeOut count down for when card is removed.
-        uint32_t ms_tooluseTime = 0; // Holds time relay was opened on timeout and therefore the time the tool was in use
-        char min_tooluseTime = 0;
-        uint32_t ms_relayStart = 0; // Holds time (milliseconds) at initial closing of relay
-        uint32_t ms_wifi_outage = 0; // ?
-    } Timers;
-
     // Struct for holding cardParams, LEDParams, and Timers
     typedef struct{
         LEDParams LEDParams0; // Parameters for LED0
         LEDParams LEDParams1;  // Parameters for LED1
-        Timers timers;         // Instance Timers struct to hold all of our relevant timers
         cardParams card;      // Holds info about read card  
     } metaStruct;
 
@@ -143,8 +134,12 @@ metaStruct contains declared members of the other structs. It functions as a con
    void loop(){
    // Loop is not used when working with the RTOS 
    }
-   
 
+.. note:: 
+
+   Software timer callback functions can also have pointers passed through its ``void * pvTimerID`` parameter in the ``xTimerCreate()`` call. 
+   The RTOS documentation does not explicitly state this like it does for tasks creation. 
+   
 
 Peripheral Interactions
 -----------------------
@@ -289,11 +284,15 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 **RTOS Task Summary**
 
 
-.. +-------------------+---------------------+-------------------+-------------------+-------------------+
-| Task Name         | Task Handle         | WaitBits()        | SetBits()         | 
-+===================+=====================+===================+===================+
-| pollNewTask()     | pollNewHandle       | N/A               | If(server) CARD_BIT_0
-|                   |                     |                   | 
++-------------------+---------------------+------------------------------+------------------------------+-------------------+
+| Task Name         | WaitBits()          | SetBits()                    | vTaskDelay()                 | Other             |
++===================+=====================+==============================+==============================+===================+
+| pollNewTask()     | N/A                 | If(connected) CARD_BIT_0     | MS_POLL_TIMER                |                   |
+|                   |                     | else CARD_BIT_0 | AUTH_BIT_1 |                              |                   |
++-------------------+---------------------+------------------------------+------------------------------+-------------------+
+| pollNewTask()     | N/A                 | If(connected) CARD_BIT_0     |                              |                   |
+|                   |                     | else CARD_BIT_0 | AUTH_BIT_1 |                              |                   |
++-------------------+---------------------+------------------------------+------------------------------+-------------------+
 
 **RTOS Task List**
 
@@ -321,8 +320,7 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 
          notificationValue = ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS(300));
          if(notificationValue == 1 ){          // Notification from onMqttMessage that a card was denied
-           Serial.println("Notification!!");
-           Serial.println(notificationValue);
+           Serial.println("Notification: Card denied");
            // Set both LEDS to Red
            progParams->LEDParams0.myColour = CRGB::Red; 
            progParams->LEDParams1.myColour = CRGB::Red;
@@ -342,12 +340,9 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 
             // First, check if to make sure the WiFi outtage flag hasn't been thrown
             if(xEventGroupGetBits(rfidStatesGroup) == 129){ // If the WiFi is out simply grant access and log
-
-                // May still be useful for SPIFFS as storing a byte or int is more space efficient than a string. We can convert come re-connect to server
-                userID(progParams, mfrc522.uid.uidByte, mfrc522.uid.size); // Move UID from struct to our own buffer
-                Serial.println("WiFi is out");
-                writeLog(progParams);
-                xEventGroupSetBits(rfidStatesGroup, AUTH_BIT_1);  // Grant access unconditionally because WiFi is out
+               Serial.println("WiFi is out");
+               xEventGroupSetBits(rfidStatesGroup, AUTH_BIT_1); // If WiFi/MQTT server cannot be reached grant user access regardless of authorization
+               // Code for logging should go here.
             }
 
          else{ // If the Wifi isn't out ask server for authorization
@@ -365,7 +360,6 @@ Line 4 shows how the value held in an EventGroup could be checked if a condition
 
        else {
          // No new card, keep polling for new cards
-         Serial.print("EventBits:");
         }
       }
    }
@@ -470,9 +464,11 @@ The task then suspends itself once all of this has been achieved. This task is r
      }
    }
 
-``pollPresTask``  unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. Because ``pollPresTask``and ``collPollTask`` occur in the same state and both utilize the SPI bus a Mutex is given/taken by the two Tasks. 
+``pollPresTask``  unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. Because both ``pollPresTask``\  and ``collPollTask`` occur in the same state and both utilize the SPI bus a Mutex is given/taken by the two Tasks. 
 If ``pollPres()`` detects that the authorized card has left the RF field the CARD_BIT_0 and AUTH_BIT_1 is cleared then the TIMEOUT_BIT_3 is set. This unblocks the ``timeoutTask()`` while placing both
 ``pollPresTask()`` and ``collPollTask()`` back in the blocked state. 
+
+LEDs are set to blink red when a card is removal is detected.
 
 .. collPollTask ()
    waitBits = CARD_BIT_0 | AUTH_BIT_1
@@ -510,7 +506,10 @@ If ``pollPres()`` detects that the authorized card has left the RF field the CAR
      }
    }
 
-``collPollTask()`` unblocks when CARD_BIT_0 and AUTH_BIT_1 are set.
+``collPollTask()`` unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. It gives/takes a mutes with ``pollPresTask()`` to avoid conlficting access of the SPI bus. If a collision is detected by ``collPolling()``
+CARD_BIT_0 | AUTH_BIT_1 are cleared and the TIMEOUT_BIT_3 | COLL_BIT_4 are set inorder to execute a transition to the timeout state. 
+
+LEDs are set to blink purple to indicate a collision has been detected.
 
 
 .. timeoutTask ()
@@ -521,8 +520,9 @@ If ``pollPres()`` detects that the authorized card has left the RF field the CAR
    digitalWrite RelayOpen
    clearBits = TIMEOUT_BIT_3 | RELAY_BIT_2
 
-
-
+**timeoutTask**
+``timeoutTask`` unblocks on the TIMEOUT_BIT_3. The first thing that is done is publishing to the MQTT ``rfid/auth/eou`` (end of use) topic. This is done first to minimize
+the chances of this task renetering a blocked state due to a new card 
 
 .. Ignore for now
    eStopSetTask ()
@@ -832,8 +832,8 @@ Optimization
 Whoami implementation for MQTT Topic Expansion
 """""""""""""""""""""""""""""""""""""""""""""""
 
-As noted in the section on future MQTT topic structure each tool access system will need to be told what tool it is and what workshop it is in. At least if we are to
-avoid having to hardcode each station.
+As noted in the section on future MQTT topic structure each tool access system will need to be told what tool it is and what workshop it is in. This could be achieved 
+using a JSON document payload, retained publishes with each devices factory coded MAC addresses, and a single hardcoded whoami topic.
 
 Possible solutuion:
 

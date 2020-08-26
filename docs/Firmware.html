@@ -195,7 +195,7 @@ core for the ESP32 rides on top of is utilized in the RTOS branch for asynchrono
 rather than at the tool level where the card is read. MQTT is utilized for asynchronous communication with the authentication sever.</p>
 <div class="section" id="linear-vs-rtos-branches">
 <h2>Linear vs RTOS Branches<a class="headerlink" href="#linear-vs-rtos-branches" title="Permalink to this headline">¶</a></h2>
-<p>The firmware for the tool access project has two branches as of Aug 25, 2020: Linear and RTOS.</p>
+<p>The firmware for the tool access project has two branches as of Aug 26, 2020: Linear and RTOS.</p>
 <p>The linear branch is “standard” linear Arduino code. It can’t query a database and instead uses a hardcoded UID’s as a “stub” for authorization of cards.</p>
 <p>The RTOS branch utilizes the  RTOS running underneath the Arduino layer for more graceful task handling. The Arduino framework is still utilized to interact
 with peripherals but is wrapped in RTOS Tasks. This branch communicates with an MQTT broker via WiFi for authentication of RFID cards.</p>
@@ -218,9 +218,11 @@ The other WiFi.h is located in the platformio directory under <code class="docut
 <ol class="arabic simple">
 <li><p><a class="reference external" href="https://www.youtube.com/watch?v=E9FY-IOvC3Q">ESP32 Meet-up FreeRTOS</a> I watched this on 1.75X to give me the basic gist of the RTOS API</p></li>
 <li><p><a class="reference external" href="https://www.freertos.org/wp-content/uploads/2018/07/161204_Mastering_the_FreeRTOS_Real_Time_Kernel-A_Hands-On_Tutorial_Guide.pdf">Mastering the FreeRTOS Real Time Kernel</a> This is an official freeRTOS resource. The ESP RTOS is based on it but is not exactly the same. I recommend skipping striaght to the section on Task Management.</p></li>
-<li><p><a class="reference external" href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/freertos-smp.html">ESP-IDF FreeRTOS SMP Changes</a> Espressif’s documentation for the differences bewteen ESP32’s RTOS and vanilla freeRTOS</p></li>
-<li><p><a class="reference external" href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos.html">ESP32 FreeRTOS API Reference</a> The Espressif documentation for their flavour of FreeRTOS</p></li>
+<li><p><a class="reference external" href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/freertos-smp.html">ESP-IDF FreeRTOS SMP Changes</a> Espressif’s documentation for the differences between ESP32’s RTOS and vanilla freeRTOS</p></li>
 </ol>
+<p>4. <a class="reference external" href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos.html">ESP32 FreeRTOS API Reference</a> The Espressif documentation for their flavour of FreeRTOS
+5  <a class="reference external" href="https://www.freertos.org/FreeRTOS_Support_Forum_Archive/May_2016/freertos_xTimerCreate_vTimerCallback_b3906645j.html">How to pass pointers to Software Timers</a> Passing pointers pointers to software timer callback
+functions is also possible but is not made as clear by the official documentation.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Do not solely utilizes the freeRTOS documentation without referencing Espressif’s ESP32 specific RTOS documentation.
@@ -265,18 +267,7 @@ help functions they may need to call.</p>
 23
 24
 25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37</pre></div></td><td class="code"><div class="highlight"><pre><span></span> <span class="c1">// Struct for holding UID and manipulating of UID data type</span>
+26</pre></div></td><td class="code"><div class="highlight"><pre><span></span> <span class="c1">// Struct for holding UID and manipulating of UID data type</span>
  <span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
      <span class="n">byte</span> <span class="n">uid_ByteBuffer</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span> <span class="c1">// Holds UID read out of MFRC522 library</span>
      <span class="n">byte</span> <span class="n">uid_ByteLength</span><span class="p">;</span>     <span class="c1">// Holds size of uid_ByteBuffer</span>
@@ -296,21 +287,10 @@ help functions they may need to call.</p>
      <span class="n">CRGB</span> <span class="n">myColour</span><span class="p">;</span>
  <span class="p">}</span> <span class="n">LEDParams</span><span class="p">;</span>
 
- <span class="c1">// Struct for holding timer information</span>
- <span class="k">typedef</span> <span class="k">struct</span><span class="p">{</span>
-     <span class="kt">uint32_t</span> <span class="n">ms_timeLast</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// millisecond timer for holding last time was in a function.</span>
-     <span class="kt">uint32_t</span> <span class="n">ms_timeOut</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Holds ms_timeOut count down for when card is removed.</span>
-     <span class="kt">uint32_t</span> <span class="n">ms_tooluseTime</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Holds time relay was opened on timeout and therefore the time the tool was in use</span>
-     <span class="kt">char</span> <span class="n">min_tooluseTime</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-     <span class="kt">uint32_t</span> <span class="n">ms_relayStart</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// Holds time (milliseconds) at initial closing of relay</span>
-     <span class="kt">uint32_t</span> <span class="n">ms_wifi_outage</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// ?</span>
- <span class="p">}</span> <span class="n">Timers</span><span class="p">;</span>
-
  <span class="c1">// Struct for holding cardParams, LEDParams, and Timers</span>
  <span class="k">typedef</span> <span class="k">struct</span><span class="p">{</span>
      <span class="n">LEDParams</span> <span class="n">LEDParams0</span><span class="p">;</span> <span class="c1">// Parameters for LED0</span>
      <span class="n">LEDParams</span> <span class="n">LEDParams1</span><span class="p">;</span>  <span class="c1">// Parameters for LED1</span>
-     <span class="n">Timers</span> <span class="n">timers</span><span class="p">;</span>         <span class="c1">// Instance Timers struct to hold all of our relevant timers</span>
      <span class="n">cardParams</span> <span class="n">card</span><span class="p">;</span>      <span class="c1">// Holds info about read card</span>
  <span class="p">}</span> <span class="n">metaStruct</span><span class="p">;</span>
 </pre></div>
@@ -381,6 +361,11 @@ help functions they may need to call.</p>
 <span class="p">}</span>
 </pre></div>
 </td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Software timer callback functions can also have pointers passed through its <code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">*</span> <span class="pre">pvTimerID</span></code> parameter in the <code class="docutils literal notranslate"><span class="pre">xTimerCreate()</span></code> call.
+The RTOS documentation does not explicitly state this like it does for tasks creation.</p>
+</div>
 </div>
 <div class="section" id="peripheral-interactions">
 <h2>Peripheral Interactions<a class="headerlink" href="#peripheral-interactions" title="Permalink to this headline">¶</a></h2>
@@ -513,12 +498,39 @@ it can clear the bits it checks on returning.</p>
 </div>
 <p><strong>RTOS States Diagram</strong></p>
 <p><strong>RTOS Task Summary</strong></p>
-<div class="line-block">
-<div class="line">Task Name         | Task Handle         | WaitBits()        | SetBits()         |</div>
-</div>
-<p>+===================+=====================+===================+===================+
-| pollNewTask()     | pollNewHandle       | N/A               | If(server) CARD_BIT_0
-|                   |                     |                   |</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 18%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Task Name</p></th>
+<th class="head"><p>WaitBits()</p></th>
+<th class="head"><p>SetBits()</p></th>
+<th class="head"><p>vTaskDelay()</p></th>
+<th class="head"><p>Other</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>pollNewTask()</p></td>
+<td><p>N/A</p></td>
+<td><p>If(connected) CARD_BIT_0
+else CARD_BIT_0 | AUTH_BIT_1</p></td>
+<td><p>MS_POLL_TIMER</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>pollNewTask()</p></td>
+<td><p>N/A</p></td>
+<td><p>If(connected) CARD_BIT_0
+else CARD_BIT_0 | AUTH_BIT_1</p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p><strong>RTOS Task List</strong></p>
 <div class="literal-block-wrapper docutils container" id="id6">
 <div class="code-block-caption"><span class="caption-text">Polling for New Cards</span><a class="headerlink" href="#id6" title="Permalink to this code">¶</a></div>
@@ -573,12 +585,7 @@ it can clear the bits it checks on returning.</p>
 49
 50
 51
-52
-53
-54
-55
-56
-57</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">pollNewTask</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">params</span><span class="p">){</span>
+52</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">pollNewTask</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">params</span><span class="p">){</span>
    <span class="n">metaStruct</span> <span class="o">*</span><span class="n">progParams</span> <span class="o">=</span> <span class="p">(</span><span class="n">metaStruct</span><span class="o">*</span><span class="p">)</span> <span class="n">params</span><span class="p">;</span>
    <span class="kt">uint32_t</span> <span class="n">notificationValue</span><span class="p">;</span>
 
@@ -587,8 +594,7 @@ it can clear the bits it checks on returning.</p>
 
       <span class="n">notificationValue</span> <span class="o">=</span> <span class="n">ulTaskNotifyTake</span> <span class="p">(</span><span class="n">pdTRUE</span><span class="p">,</span> <span class="n">pdMS_TO_TICKS</span><span class="p">(</span><span class="mi">300</span><span class="p">));</span>
       <span class="k">if</span><span class="p">(</span><span class="n">notificationValue</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">){</span>          <span class="c1">// Notification from onMqttMessage that a card was denied</span>
-        <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;Notification!!&quot;</span><span class="p">);</span>
-        <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">notificationValue</span><span class="p">);</span>
+        <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;Notification: Card denied&quot;</span><span class="p">);</span>
         <span class="c1">// Set both LEDS to Red</span>
         <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">LEDParams0</span><span class="p">.</span><span class="n">myColour</span> <span class="o">=</span> <span class="n">CRGB</span><span class="o">::</span><span class="n">Red</span><span class="p">;</span>
         <span class="n">progParams</span><span class="o">-&gt;</span><span class="n">LEDParams1</span><span class="p">.</span><span class="n">myColour</span> <span class="o">=</span> <span class="n">CRGB</span><span class="o">::</span><span class="n">Red</span><span class="p">;</span>
@@ -608,12 +614,9 @@ it can clear the bits it checks on returning.</p>
 
          <span class="c1">// First, check if to make sure the WiFi outtage flag hasn&#39;t been thrown</span>
          <span class="k">if</span><span class="p">(</span><span class="n">xEventGroupGetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">)</span> <span class="o">==</span> <span class="mi">129</span><span class="p">){</span> <span class="c1">// If the WiFi is out simply grant access and log</span>
-
-             <span class="c1">// May still be useful for SPIFFS as storing a byte or int is more space efficient than a string. We can convert come re-connect to server</span>
-             <span class="n">userID</span><span class="p">(</span><span class="n">progParams</span><span class="p">,</span> <span class="n">mfrc522</span><span class="p">.</span><span class="n">uid</span><span class="p">.</span><span class="n">uidByte</span><span class="p">,</span> <span class="n">mfrc522</span><span class="p">.</span><span class="n">uid</span><span class="p">.</span><span class="n">size</span><span class="p">);</span> <span class="c1">// Move UID from struct to our own buffer</span>
-             <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;WiFi is out&quot;</span><span class="p">);</span>
-             <span class="n">writeLog</span><span class="p">(</span><span class="n">progParams</span><span class="p">);</span>
-             <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">AUTH_BIT_1</span><span class="p">);</span>  <span class="c1">// Grant access unconditionally because WiFi is out</span>
+            <span class="n">Serial</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="s">&quot;WiFi is out&quot;</span><span class="p">);</span>
+            <span class="n">xEventGroupSetBits</span><span class="p">(</span><span class="n">rfidStatesGroup</span><span class="p">,</span> <span class="n">AUTH_BIT_1</span><span class="p">);</span> <span class="c1">// If WiFi/MQTT server cannot be reached grant user access regardless of authorization</span>
+            <span class="c1">// Code for logging should go here.</span>
          <span class="p">}</span>
 
       <span class="k">else</span><span class="p">{</span> <span class="c1">// If the Wifi isn&#39;t out ask server for authorization</span>
@@ -631,7 +634,6 @@ it can clear the bits it checks on returning.</p>
 
     <span class="k">else</span> <span class="p">{</span>
       <span class="c1">// No new card, keep polling for new cards</span>
-      <span class="n">Serial</span><span class="p">.</span><span class="n">print</span><span class="p">(</span><span class="s">&quot;EventBits:&quot;</span><span class="p">);</span>
      <span class="p">}</span>
    <span class="p">}</span>
 <span class="p">}</span>
@@ -765,9 +767,10 @@ The task then suspends itself once all of this has been achieved. This task is r
 <span class="p">}</span>
 </pre></div>
 </td></tr></table></div>
-<p><code class="docutils literal notranslate"><span class="pre">pollPresTask</span></code>  unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. Because <code class="docutils literal notranslate"><span class="pre">pollPresTask``and</span> <span class="pre">``collPollTask</span></code> occur in the same state and both utilize the SPI bus a Mutex is given/taken by the two Tasks.
+<p><code class="docutils literal notranslate"><span class="pre">pollPresTask</span></code>  unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. Because both <code class="docutils literal notranslate"><span class="pre">pollPresTask</span></code> and <code class="docutils literal notranslate"><span class="pre">collPollTask</span></code> occur in the same state and both utilize the SPI bus a Mutex is given/taken by the two Tasks.
 If <code class="docutils literal notranslate"><span class="pre">pollPres()</span></code> detects that the authorized card has left the RF field the CARD_BIT_0 and AUTH_BIT_1 is cleared then the TIMEOUT_BIT_3 is set. This unblocks the <code class="docutils literal notranslate"><span class="pre">timeoutTask()</span></code> while placing both
 <code class="docutils literal notranslate"><span class="pre">pollPresTask()</span></code> and <code class="docutils literal notranslate"><span class="pre">collPollTask()</span></code> back in the blocked state.</p>
+<p>LEDs are set to blink red when a card is removal is detected.</p>
 <div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
  3
@@ -811,7 +814,12 @@ If <code class="docutils literal notranslate"><span class="pre">pollPres()</span
 <span class="p">}</span>
 </pre></div>
 </td></tr></table></div>
-<p><code class="docutils literal notranslate"><span class="pre">collPollTask()</span></code> unblocks when CARD_BIT_0 and AUTH_BIT_1 are set.</p>
+<p><code class="docutils literal notranslate"><span class="pre">collPollTask()</span></code> unblocks when CARD_BIT_0 and AUTH_BIT_1 are set. It gives/takes a mutes with <code class="docutils literal notranslate"><span class="pre">pollPresTask()</span></code> to avoid conlficting access of the SPI bus. If a collision is detected by <code class="docutils literal notranslate"><span class="pre">collPolling()</span></code>
+CARD_BIT_0 | AUTH_BIT_1 are cleared and the TIMEOUT_BIT_3 | COLL_BIT_4 are set inorder to execute a transition to the timeout state.</p>
+<p>LEDs are set to blink purple to indicate a collision has been detected.</p>
+<p><strong>timeoutTask</strong>
+<code class="docutils literal notranslate"><span class="pre">timeoutTask</span></code> unblocks on the TIMEOUT_BIT_3. The first thing that is done is publishing to the MQTT <code class="docutils literal notranslate"><span class="pre">rfid/auth/eou</span></code> (end of use) topic. This is done first to minimize
+the chances of this task renetering a blocked state due to a new card</p>
 </div>
 </div>
 <div class="section" id="com12999-addressable-leds">
@@ -1141,8 +1149,8 @@ it could ammend more generic hardcoded MQTT topics.</p>
 <h3>Optimization<a class="headerlink" href="#optimization" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="whoami-implementation-for-mqtt-topic-expansion">
 <h4>Whoami implementation for MQTT Topic Expansion<a class="headerlink" href="#whoami-implementation-for-mqtt-topic-expansion" title="Permalink to this headline">¶</a></h4>
-<p>As noted in the section on future MQTT topic structure each tool access system will need to be told what tool it is and what workshop it is in. At least if we are to
-avoid having to hardcode each station.</p>
+<p>As noted in the section on future MQTT topic structure each tool access system will need to be told what tool it is and what workshop it is in. This could be achieved
+using a JSON document payload, retained publishes with each devices factory coded MAC addresses, and a single hardcoded whoami topic.</p>
 <p>Possible solutuion:</p>
 <div class="literal-block-wrapper docutils container" id="id12">
 <div class="code-block-caption"><span class="caption-text">ESP32 Generic Hardcoded MQTT Topics</span><a class="headerlink" href="#id12" title="Permalink to this code">¶</a></div>

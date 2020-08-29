@@ -36,7 +36,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="MFRC522 - A Primer" href="MFRC522.html" /> 
+    <link rel="next" title="Roadmap to Further Development" href="futureDevelopment.html" />
+    <link rel="prev" title="RFID Module - A Primer" href="MFRC522.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -86,17 +87,19 @@
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="PCBDesign.html">PCB Design</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Firmware.html">Firmware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">MFRC522 - A Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasknTimer.html">RTOS Tasks and Timers Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">RFID Module - A Primer</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Assembly</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#soldering">Soldering</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#enclosure">Enclosure</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#drill-template">Drill template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#drillhole-marking-templates">Drillhole marking templates</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#faceplate-alignment-template">Faceplate + alignment template</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#cable-gland-template">Cable Gland template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cable-gland-marking-template">Cable Gland Marking template</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="futureDevelopment.html">Roadmap to Further Development</a></li>
 </ul>
 
             
@@ -178,8 +181,8 @@ PCB.</p>
 <p>The second physical revision of the tool access project can be mounted to the lid of a Multicomp G387 project box with four nylon M3 15mm (+6mm thread) standoffs and
 four M3 x 6mm nylon screws. The spacing is such that the RFID module will be pressed flush to the face of the project box lid. If additional rigidity for the RFID
 module is desired a high quality double stick tape could be applied to the module.</p>
-<div class="section" id="drill-template">
-<h3>Drill template<a class="headerlink" href="#drill-template" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="drillhole-marking-templates">
+<h3>Drillhole marking templates<a class="headerlink" href="#drillhole-marking-templates" title="Permalink to this headline">¶</a></h3>
 <p><a class="reference download internal" download="" href="_downloads/6e3ad46f96396a7d039d1fe33e614b9f/Rev02markingTemplate.lbrn"><code class="xref download docutils literal notranslate"><span class="pre">Rev02DrillTemplate</span></code></a></p>
 <div class="figure align-default" id="id1">
 <img alt="_images/drillTemplate.png" src="_images/drillTemplate.png" />
@@ -192,7 +195,7 @@ module is desired a high quality double stick tape could be applied to the modul
 <div class="figure align-default" id="id2">
 <img alt="_images/alignmentTemplate.png" src="_images/alignmentTemplate.png" />
 <p class="caption"><span class="caption-text">The faceplate alignment template is designed to be used once the PCB has been mounted to te lid of its enclosure. Then key the template over the mounting hardware
-on the exterior of the lid. Ensure that the LEDs are on the left, then affix the card holder. This will ensure the AC portion of the PCB is in the bottom of the
+on the exterior of the lid. <strong>Ensure that the LEDs are on the left</strong>, then affix the card holder. This will ensure the AC portion of the PCB is in the bottom of the
 enclosure.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </div>
 <div class="admonition note">
@@ -200,8 +203,8 @@ enclosure.</span><a class="headerlink" href="#id2" title="Permalink to this imag
 <p>If compatibility with keychain style FOB RFID tags is desired the flaceplate design included on this page will need to be modified.</p>
 </div>
 </div>
-<div class="section" id="cable-gland-template">
-<h3>Cable Gland template<a class="headerlink" href="#cable-gland-template" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="cable-gland-marking-template">
+<h3>Cable Gland Marking template<a class="headerlink" href="#cable-gland-marking-template" title="Permalink to this headline">¶</a></h3>
 <dl class="field-list simple">
 <dt class="field-odd">download</dt>
 <dd class="field-odd"><p><cite>cableGlandTemplate &lt;./files/cableGlandJig.lbrn&gt;</cite></p>
@@ -219,8 +222,10 @@ enclosure.</span><a class="headerlink" href="#id2" title="Permalink to this imag
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
+        <a href="futureDevelopment.html" class="btn btn-neutral float-right" title="Roadmap to Further Development" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-        <a href="MFRC522.html" class="btn btn-neutral float-left" title="MFRC522 - A Primer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+        <a href="MFRC522.html" class="btn btn-neutral float-left" title="RFID Module - A Primer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

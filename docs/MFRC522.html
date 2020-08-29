@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>MFRC522 - A Primer &mdash; Victoria Makerspace  documentation</title>
+  <title>RFID Module - A Primer &mdash; Victoria Makerspace  documentation</title>
   
 
   
@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Assembly" href="Assembly.html" />
-    <link rel="prev" title="Firmware" href="Firmware.html" /> 
+    <link rel="prev" title="RTOS Tasks and Timers Reference" href="tasknTimer.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,7 +88,8 @@
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="PCBDesign.html">PCB Design</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Firmware.html">Firmware</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">MFRC522 - A Primer</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="tasknTimer.html">RTOS Tasks and Timers Reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RFID Module - A Primer</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#purpose-of-this-document">Purpose of this document</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#card-detection">Card detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#card-presence">Card presence</a></li>
@@ -96,6 +97,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Assembly.html">Assembly</a></li>
+<li class="toctree-l1"><a class="reference internal" href="futureDevelopment.html">Roadmap to Further Development</a></li>
 </ul>
 
             
@@ -142,7 +144,7 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>MFRC522 - A Primer</li>
+      <li>RFID Module - A Primer</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -161,8 +163,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="mfrc522-a-primer">
-<h1>MFRC522 - A Primer<a class="headerlink" href="#mfrc522-a-primer" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="rfid-module-a-primer">
+<h1>RFID Module - A Primer<a class="headerlink" href="#rfid-module-a-primer" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="purpose-of-this-document">
+<h2>Purpose of this document<a class="headerlink" href="#purpose-of-this-document" title="Permalink to this headline">¶</a></h2>
+<p>The RFID module choosen for this project is sold as either “MFRC522 module” or “RC522 module” in both cases named for the “MFRC522” chip made by NPX Semiconductor.
+The purpose of this document is to provide a primer on how the MFRC522 module functions. For some understanding how the module works may assist in their understand
+of the code written in the course of this project. The MFRC522 RFID chip can do much more than it is used for in this project. Therefore I will only focus
+on how the MFRC522 functions so far as it is relevant to this project.</p>
 <p>This most commonly utilized Arduino library utilized for the MFRC522 is a library written by <a class="reference external" href="https://github.com/miguelbalboa/rfid#development">Miguel Balboa</a> .
 It has long since passed to community maintainers and has been frozen as of 2019.</p>
 <p>There is also a <a class="reference external" href="https://github.com/makerspaceleiden/rfid">rewrite</a> of the library done by members of the Leiden Makerspace with somewhat extended functionality and
@@ -172,12 +180,9 @@ further documentation.</p>
 <ol class="arabic simple">
 <li><p><a class="reference external" href="https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf">MFRC522 Datasheet</a></p></li>
 <li><p><a class="reference external" href="https://www.nxp.com/docs/en/application-note/AN10834.pdf">MIFARE ISO/IEC 14443 PICC Selection</a></p></li>
+<li><p><a class="reference external" href="https://docu.byzance.cz/hardware-a-programovani/programovani-hw/knihovny/mfrc522">List of status codes and types</a></p></li>
+<li><p><a class="reference external" href="https://diy.waziup.io/assets/src/sketch/libraries/MFRC522/doc/rfidmifare.pdf">Mario Capurso’s write up using MFRC522 Arduino library</a></p></li>
 </ol>
-<div class="section" id="purpose-of-this-document">
-<h2>Purpose of this document<a class="headerlink" href="#purpose-of-this-document" title="Permalink to this headline">¶</a></h2>
-<p>The purpose of this document is to provide a primer on how the MFRC522 module functions. For some understanding how the module works may assist in their understand of the
-code written in the course of this project. NPX Semiconductor’s MFRC522 RFID chip can do much more than it is used for in this project. Therefore I will only focus
-on how the MFRC522 functions so far as it is relevant to this project.</p>
 <div class="sidebar">
 <p class="sidebar-title">Glossary of MFRC522 Technical Abbreviations &amp; Terms</p>
 <dl class="glossary simple">
@@ -349,7 +354,7 @@ the timeout to occur.</p>
         <a href="Assembly.html" class="btn btn-neutral float-right" title="Assembly" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="Firmware.html" class="btn btn-neutral float-left" title="Firmware" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="tasknTimer.html" class="btn btn-neutral float-left" title="RTOS Tasks and Timers Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

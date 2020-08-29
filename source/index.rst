@@ -13,8 +13,10 @@ Welcome to Victoria Makerspace's Tool Access Project Documentation!
    Introduction
    PCBDesign
    Firmware
+   tasknTimer
    MFRC522
    Assembly
+   futureDevelopment
 
 Indices and tables
 ==================

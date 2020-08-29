@@ -96,8 +96,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Firmware.html">Firmware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">MFRC522 - A Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasknTimer.html">RTOS Tasks and Timers Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">RFID Module - A Primer</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Assembly.html">Assembly</a></li>
+<li class="toctree-l1"><a class="reference internal" href="futureDevelopment.html">Roadmap to Further Development</a></li>
 </ul>
 
             
@@ -257,8 +259,27 @@ low voltage DC side to achieve creepage distances of &gt;4mm. Additionally all A
 </div>
 <div class="section" id="bodge-gallery">
 <h2>Bodge Gallery<a class="headerlink" href="#bodge-gallery" title="Permalink to this headline">¶</a></h2>
-<p>Prototype 1</p>
-<p>Prototype 2</p>
+<p>Mistakes are part of prototyping. Humor and joy can be found in trying to fix these mistakes after the fact. So please enjoy this small gallery of design screw-ups
+and after the fact repairs made in the course of this project.</p>
+<p><strong>Prototype 1</strong></p>
+<div class="figure align-center" id="id5">
+<img alt="_images/relayMirror.jpg" src="_images/relayMirror.jpg" />
+<p class="caption"><span class="caption-text">I was so focused on making sure I didn’t accidentally mirror the header placement for the RFID module I accidentally mirrored the footprint for the relay when I made
+it. Fortunately the placement of the AC pins wasn’t so drastically different I couldn’t correct for this with a rotary tool. It also helps that the board mount pins
+are soldered for mechanical strength only.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="_images/protoT1Bodge.jpg" src="_images/protoT1Bodge.jpg" />
+<p class="caption"><span class="caption-text">I initially used the footprint for the smaller 5V 600mA HiLink board mount PSU without realizing. This mistake required a less subtle fix due to major difference in
+dimensions between the two models.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<p><strong>Prototype 2</strong></p>
+<div class="figure align-center" id="id7">
+<img alt="_images/SDAShort.png" src="_images/SDAShort.png" />
+<p class="caption"><span class="caption-text">Uncaught error in the kiCAD file (now fixed) causing the connection between the RFID modules SDA pin and the ESP32’s pin 21 to short to ground. Surprisingly the
+un-circled trace isn’t shorted to ground but was none the less moved further for the ground pad in the next revision.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+<p>Fortunately this design error was easily corrected by severing the trace either side of the short and soldering a a wire from the SDA pin to pin 21.</p>
 </div>
 </div>
 

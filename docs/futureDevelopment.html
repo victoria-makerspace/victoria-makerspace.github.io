@@ -1,0 +1,404 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Roadmap to Further Development &mdash; Victoria Makerspace  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script src="https://unpkg.com/mermaid@8.4.8/dist/mermaid.min.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Assembly" href="Assembly.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Victoria Makerspace
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="PCBDesign.html">PCB Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Firmware.html">Firmware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasknTimer.html">RTOS Tasks and Timers Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">RFID Module - A Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Assembly.html">Assembly</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Roadmap to Further Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#proposed-future-mqtt-topic-structure">Proposed Future MQTT Topic Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#whoami-implementation-for-mqtt-topic-expansion">Whoami implementation for MQTT Topic Expansion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#interrupt-functionality-of-the-mfrc522-module">Interrupt functionality of the MFRC522 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optimizing-rtos-task-stack-size">Optimizing RTOS Task Stack Size</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#shrinking-program-size-for-ota">Shrinking program size for OTA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-of-onboard-logging">Implementation of onboard logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#desired-future-features">Desired Future Features</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Victoria Makerspace</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Roadmap to Further Development</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/futureDevelopment.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="roadmap-to-further-development">
+<h1>Roadmap to Further Development<a class="headerlink" href="#roadmap-to-further-development" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="proposed-future-mqtt-topic-structure">
+<h2>Proposed Future MQTT Topic Structure<a class="headerlink" href="#proposed-future-mqtt-topic-structure" title="Permalink to this headline">¶</a></h2>
+<p>The current MQTT topic structure used for the prototype is quite simple for testing purposes. It will have to be expanded and complicated once &gt;1 device is to be controlled.
+This is the proposed future MQTT Topic Structure. This structure would allow for finer grained control at both the workshop and the individual tool level.
+Changes to the code base will be necessary in order to make this viable. Primarily a means of telling each tool who it is and what workshop it is in so that
+it could amended more generic hardcoded MQTT topics.</p>
+<div class="highlight-C++ notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="c1">// + single level wildcard</span>
+<span class="c1">// # multi level wildcard</span>
+<span class="c1">// wildcards may be used to subscribe to topics only not publish</span>
+
+<span class="c1">// Whoami - would allows tool to append hardcoded MQTT topics to include workshop/toolalias</span>
+<span class="n">tool</span><span class="o">/</span><span class="n">MAC</span> <span class="c1">// payload: workshop, toolalias</span>
+
+<span class="c1">// Workshops level topics</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">woodshop</span><span class="o">/</span><span class="n">toolalias</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">fasbshop</span><span class="o">/</span><span class="n">toolalias</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">machineshop</span><span class="o">/</span><span class="n">toolalias</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">electronics</span><span class="o">/</span><span class="n">toolalias</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">sewing</span><span class="o">/</span><span class="n">toolalias</span>
+
+<span class="c1">// Authorization topics</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">auth</span><span class="o">/</span><span class="n">req</span> <span class="c1">// payloads: UID</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">auth</span><span class="o">/</span><span class="n">rsp</span> <span class="c1">// payloads: auth|denied|seekiosk</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">auth</span><span class="o">/</span><span class="n">eou</span> <span class="c1">// uid</span>
+
+<span class="c1">// Estop topics</span>
+<span class="n">tools</span><span class="o">/</span><span class="n">estop</span>   <span class="c1">// Makerspace level</span>
+<span class="n">tools</span><span class="o">/+/</span><span class="n">estop</span> <span class="c1">// Workshop level</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">estop</span> <span class="c1">// Tool level</span>
+
+<span class="c1">// Logging topics</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span> <span class="c1">// payload: status</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span><span class="n">status</span><span class="o">/</span><span class="n">rsp</span> <span class="c1">// payload: true, sizeoflog|false</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span><span class="n">send</span> <span class="c1">// payload: req</span>
+<span class="n">tools</span><span class="o">/+/+/</span><span class="n">logs</span><span class="o">/</span><span class="n">send</span> <span class="c1">//payload: JSON document holding logs?</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="whoami-implementation-for-mqtt-topic-expansion">
+<h2>Whoami implementation for MQTT Topic Expansion<a class="headerlink" href="#whoami-implementation-for-mqtt-topic-expansion" title="Permalink to this headline">¶</a></h2>
+<p>As noted in the section on future MQTT topic structure each tool access system will need to be told what tool it is and what workshop it is in. This could be achieved
+using a JSON document payload, retained publishes with each devices factory coded MAC addresses, and a single hardcoded whoami topic.</p>
+<p>Possible solution:</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">ESP32 Generic Hardcoded MQTT Topics</span><a class="headerlink" href="#id1" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// These may have to live in a struct so that they may be edited</span>
+<span class="n">tool</span><span class="o">/</span><span class="n">auth</span><span class="o">/</span><span class="n">req</span>
+<span class="n">tool</span><span class="o">/</span><span class="n">auth</span><span class="o">/</span><span class="n">rsp</span>
+<span class="n">tool</span><span class="o">/</span><span class="n">auth</span><span class="o">/</span><span class="n">eou</span>
+
+<span class="c1">// Subscriptions</span>
+<span class="n">estop</span>
+<span class="n">tool</span><span class="o">/</span><span class="n">MAC</span> <span class="c1">// payload: JSON doc {tool: &quot;alias&quot;, workshop: &quot;woodshop&quot; }</span>
+</pre></div>
+</div>
+</div>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Server side MQTT Topic</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Retain flag set</span>
+<span class="n">tool</span><span class="o">/</span><span class="n">MAC1</span>  <span class="c1">// payload: JSON doc {tool: &quot;tablesaw&quot;, workshop: &quot;woodshop&quot; }</span>
+<span class="n">tool</span><span class="o">/</span><span class="n">MAC2</span>  <span class="c1">// payload: JSON doc {tool: &quot;bandsaw&quot;, workshop: &quot;woodshop&quot; }</span>
+<span class="c1">// etc</span>
+</pre></div>
+</div>
+</div>
+<p>On boot ESP32 will recieved retained publish on /tool/myMAC with a JSON document as the payload. This will have to activate a helper task to unpack that JSON document
+and ammend the /workshop/tool to all of the hardcoded MQTT topics. Task will have to unsubscribe from tool/myMAC on successful completion of topic editing lest the topic be repeatedly retriggered.</p>
+<p>Requirements:</p>
+<p>JSON implenetation for ESP32
+MQTTammendTask design
+Modificaiton of <code class="docutils literal notranslate"><span class="pre">onMqttMessage()</span></code> and <code class="docutils literal notranslate"><span class="pre">onMqttConnect()</span></code> to accept pointers through the <code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">*</span> <span class="pre">pvTimerID</span></code> in their <code class="docutils literal notranslate"><span class="pre">xTimerCreate()</span></code> call. This will be needed to give
+scope to the callback functions so that MQTT topics can be read out of a struct or JSON doc or whatever implementation is decided upon.</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">ESP</span><span class="p">.</span><span class="n">getEfuseMAC</span><span class="p">();</span> <span class="c1">// This call will return the unique factory programed MAC address.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="interrupt-functionality-of-the-mfrc522-module">
+<h2>Interrupt functionality of the MFRC522 module<a class="headerlink" href="#interrupt-functionality-of-the-mfrc522-module" title="Permalink to this headline">¶</a></h2>
+<p>The MFRC522 chip supports interrupts generated on pin 5. The PCB design has left this pin unconnected so that is may be connected if desired.</p>
+<p>If this is to be pursued RTOS function calls will need to be changed to their ISR safe equivalents.</p>
+</div>
+<div class="section" id="optimizing-rtos-task-stack-size">
+<h2>Optimizing RTOS Task Stack Size<a class="headerlink" href="#optimizing-rtos-task-stack-size" title="Permalink to this headline">¶</a></h2>
+<p>Each RTOS task maintains its own stack and therefore on creation you must specify the depth of that stack. Determining how deep a stack to specify is somewhat of a guessing game,
+fortunately RTOS makes some API calls available to help determine just how much stack any given task needs: <code class="docutils literal notranslate"><span class="pre">usTaskGetStackHighWaterMark()</span></code>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>ESP32 RTOS specifies its stack depth in bytes! Not words! (Vanilla RTOS is the reverse of this).</p>
+</div>
+<p>The HighWaterMark API returns the minimum amount of <strong>unused</strong> stack of the stack depth allocated at task creation. It should be checked both at task creation and
+during task execution. Using this API the stack depth can be wittled down to its safest minimum.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Example usage of the HighWaterMark API</span><a class="headerlink" href="#id3" title="Permalink to this code">¶</a></div>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">exampleTask</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">params</span><span class="p">){</span>
+<span class="n">UBaseType_t</span> <span class="n">uxHighWaterMark</span><span class="p">;</span>
+
+<span class="n">uxHighWaterMark</span> <span class="o">=</span> <span class="n">uxTaskGetStackHighWaterMark</span><span class="p">(</span> <span class="nb">NULL</span> <span class="p">);</span> <span class="c1">// Returns the minimum amount of unused stack space available since task creation</span>
+<span class="c1">// It is a good idea to check the high water mark at task creation (outside of the for(;;))</span>
+
+   <span class="k">for</span><span class="p">(;;){</span>
+      <span class="c1">// and during the task execution</span>
+      <span class="n">uxHighWaterMark</span> <span class="o">=</span> <span class="n">uxTaskGetStackHighWaterMark</span><span class="p">(</span> <span class="nb">NULL</span> <span class="p">);</span> <span class="c1">// Returns the minimum amount of unused stack space available since task creation</span>
+
+      <span class="c1">// depth of nested function calls can considerably increase the depth of stack you will need</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>All RTOS tasks created during my Summer co-op of 2020 have HighWatermark calls in place but commented out.  <strong>None of my tasks have had their stack depth optimized.</strong></p>
+<p>Other ways to know you’ve not specified enough stack? <strong>Stack Overflow</strong>
+This usually manifests itself at the ESP32 going into a wild bootloop that is viewable on the serial monitor.</p>
+</div>
+<div class="section" id="shrinking-program-size-for-ota">
+<h2>Shrinking program size for OTA<a class="headerlink" href="#shrinking-program-size-for-ota" title="Permalink to this headline">¶</a></h2>
+<p>For the over the air updates functionality to be used our program must occupy &lt;50% of flash memory. As of 2020/08/07 it occupies ~59%. Additionally as part of the OTA process logs from tools
+will have to be requested and transmitted before the OTA is initiated as this process will likely overwrite the SPIFFS partition.</p>
+<p>This is most likely to be achieved by replacing as much of the Arduino C++ code with straight C code that utilizes the ESP32 native API.</p>
+</div>
+<div class="section" id="implementation-of-onboard-logging">
+<h2>Implementation of onboard logging<a class="headerlink" href="#implementation-of-onboard-logging" title="Permalink to this headline">¶</a></h2>
+<p>In the event of an MQTT or WiFi disconnection event the toolAccess system grants unconditional access to whoever presents an RFID card to it. Ideally these UIDs would also belogged in internal flash memory for transmission to server upon reconnection. In design discussions it is presumed that this will likely be an uncommon event and therefore
+should not take a heavy toll on the limited read/write cycles of the ESP32 flash memory.</p>
+<p><strong>How this should work</strong></p>
+<ol class="arabic simple">
+<li><p>A WiFi/MQTT disconnection event is detected</p></li>
+<li><p>toolAccess system changes behaviour to grant unconditional access.</p></li>
+<li><p>toolAccess system logs relative onboard time of disconnection event as first entry in a log file.</p></li>
+<li><p>Every card that is granted access has its UID logged in the same file.</p></li>
+<li><p>WiFi/MQTT connection re-established.</p></li>
+<li><p>toolAccess system changes behaviour back to conditional access.</p></li>
+<li><p>Last entry in log file is relative time of disconnection event.</p></li>
+<li><p>Sever asks toolAccess system if it has logs.</p></li>
+<li><p>toolAccess system responds with Y, size of logs/N</p></li>
+<li><p>Server asks for logs.</p></li>
+<li><p>toolAccess system transmits logs and deletes log file.</p></li>
+</ol>
+<p><strong>Roadblocks</strong></p>
+<p>1. SPIFFs has stream utility inheritances that during the Summer of 2020 I could not quite get my head around. However, this means that they will likely play ball with the Arduino
+JSON library which would make writing and reading the log file much clearer at the cost of the log file being much larger.</p>
+<ol class="arabic simple" start="2">
+<li><p>Care would have to be taken to ensure that this functionality does not interfere with the OTA update requirement &gt;50% of flash memory needing to be free.</p></li>
+</ol>
+</div>
+<div class="section" id="desired-future-features">
+<h2>Desired Future Features<a class="headerlink" href="#desired-future-features" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Addition of other sensors</p></li>
+</ol>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="Assembly.html" class="btn btn-neutral float-left" title="Assembly" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Liam Brinston
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

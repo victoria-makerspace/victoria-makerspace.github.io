@@ -123,12 +123,38 @@ low voltage DC side to achieve creepage distances of >4mm. Additionally all AC t
 BOM
 -----
 
+
 Bodge Gallery
 ---------------
 
-Prototype 1
+Mistakes are part of prototyping. Humor and joy can be found in trying to fix these mistakes after the fact. So please enjoy this small gallery of design screw-ups
+and after the fact repairs made in the course of this project.
+
+**Prototype 1**
+
+
+.. figure:: ./images/relayMirror.jpg
+   :align: center
+
+   I was so focused on making sure I didn't accidentally mirror the header placement for the RFID module I accidentally mirrored the footprint for the relay when I made
+   it. Fortunately the placement of the AC pins wasn't so drastically different I couldn't correct for this with a rotary tool. It also helps that the board mount pins
+   are soldered for mechanical strength only.
 
 
 
-Prototype 2
+.. figure:: ./images/protoT1Bodge.jpg
+   :align: center
 
+   I initially used the footprint for the smaller 5V 600mA HiLink board mount PSU without realizing. This mistake required a less subtle fix due to major difference in 
+   dimensions between the two models.
+
+
+**Prototype 2**
+
+.. figure:: ./images/SDAShort.png
+   :align: center
+
+   Uncaught error in the kiCAD file (now fixed) causing the connection between the RFID modules SDA pin and the ESP32's pin 21 to short to ground. Surprisingly the 
+   un-circled trace isn't shorted to ground but was none the less moved further for the ground pad in the next revision.
+
+Fortunately this design error was easily corrected by severing the trace either side of the short and soldering a a wire from the SDA pin to pin 21.

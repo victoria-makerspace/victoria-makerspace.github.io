@@ -1,6 +1,14 @@
-==================
-MFRC522 - A Primer
-==================
+=======================
+RFID Module - A Primer
+=======================
+
+Purpose of this document
+-------------------------
+
+The RFID module choosen for this project is sold as either "MFRC522 module" or "RC522 module" in both cases named for the "MFRC522" chip made by NPX Semiconductor.
+The purpose of this document is to provide a primer on how the MFRC522 module functions. For some understanding how the module works may assist in their understand 
+of the code written in the course of this project. The MFRC522 RFID chip can do much more than it is used for in this project. Therefore I will only focus 
+on how the MFRC522 functions so far as it is relevant to this project. 
 
 This most commonly utilized Arduino library utilized for the MFRC522 is a library written by `Miguel Balboa <https://github.com/miguelbalboa/rfid#development>`_ .
 It has long since passed to community maintainers and has been frozen as of 2019.
@@ -14,13 +22,8 @@ Technical documentation:
 
 1. `MFRC522 Datasheet <https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf>`_
 2. `MIFARE ISO/IEC 14443 PICC Selection <https://www.nxp.com/docs/en/application-note/AN10834.pdf>`_ 
-
-Purpose of this document
--------------------------
-
-The purpose of this document is to provide a primer on how the MFRC522 module functions. For some understanding how the module works may assist in their understand of the
-code written in the course of this project. NPX Semiconductor's MFRC522 RFID chip can do much more than it is used for in this project. Therefore I will only focus 
-on how the MFRC522 functions so far as it is relevant to this project. 
+3. `List of status codes and types <https://docu.byzance.cz/hardware-a-programovani/programovani-hw/knihovny/mfrc522>`_
+4. `Mario Capurso's write up using MFRC522 Arduino library <https://diy.waziup.io/assets/src/sketch/libraries/MFRC522/doc/rfidmifare.pdf>`_
 
 .. sidebar:: Glossary of MFRC522 Technical Abbreviations & Terms
 
@@ -57,6 +60,8 @@ on how the MFRC522 functions so far as it is relevant to this project.
 
        CRC
           Cyclic Redundancy Check
+
+
 
 Card detection
 --------------------------------------

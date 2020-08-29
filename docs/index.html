@@ -87,8 +87,10 @@
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="PCBDesign.html">PCB Design</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Firmware.html">Firmware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">MFRC522 - A Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasknTimer.html">RTOS Tasks and Timers Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">RFID Module - A Primer</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Assembly.html">Assembly</a></li>
+<li class="toctree-l1"><a class="reference internal" href="futureDevelopment.html">Roadmap to Further Development</a></li>
 </ul>
 
             
@@ -177,37 +179,28 @@
 <li class="toctree-l2"><a class="reference internal" href="Firmware.html#getting-setup-to-code-with-the-esp32">Getting Setup to Code with the ESP32</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Firmware.html#learning-rtos-on-the-esp32">Learning RTOS on the ESP32</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Firmware.html#tool-access-configuration-and-initialization">Tool Access Configuration and Initialization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Firmware.html#tool-access-data-structures">Tool Access Data Structures</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Firmware.html#peripheral-interactions">Peripheral Interactions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Firmware.html#tool-access-data-structures">Tool Access Data Structures</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="Firmware.html#rfid-mfrc522-module">RFID - MFRC522 Module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Firmware.html#control-loop-utilized-by-tool-access-project">Control Loop Utilized by Tool Access Project</a></li>
 <li class="toctree-l4"><a class="reference internal" href="Firmware.html#state-transitions-in-rtos">State Transitions in RTOS</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="Firmware.html#com12999-addressable-leds">COM12999 - Addressable LEDs</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="Firmware.html#mqtt">MQTT</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Firmware.html#current-mqtt-structure">Current MQTT Structure</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Firmware.html#mqtt-functions">MQTT functions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Firmware.html#proposed-future-mqtt-topic-structure">Proposed Future MQTT Topic Structure</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="Firmware.html#roadmap-to-further-development">Roadmap to Further Development</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Firmware.html#optimization">Optimization</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Firmware.html#whoami-implementation-for-mqtt-topic-expansion">Whoami implementation for MQTT Topic Expansion</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Firmware.html#interrupt-functionality-of-the-mfrc522-module">Interrupt functionality of the MFRC522 module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Firmware.html#optimizing-rtos-task-stack-size">Optimizing RTOS Task Stack Size</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Firmware.html#shrinking-program-size-for-ota">Shrinking program size for OTA</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Firmware.html#implementation-of-onboard-logging">Implementation of onboard logging</a></li>
-<li class="toctree-l4"><a class="reference internal" href="Firmware.html#desired-future-features">Desired Future Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Firmware.html#server-communication-mqtt">Server Communication - MQTT</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Firmware.html#current-mqtt-topic-structure">Current MQTT Topic Structure</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tasknTimer.html">RTOS Tasks and Timers Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tasknTimer.html#rfid-tasks">RFID Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tasknTimer.html#estop-tasks">EStop Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tasknTimer.html#relay-task">Relay Task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tasknTimer.html#addressable-led-tasks">Addressable LED Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tasknTimer.html#mqtt-software-timers-and-callback-functions">MQTT software timers and callback functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">MFRC522 - A Primer</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="MFRC522.html">RFID Module - A Primer</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="MFRC522.html#purpose-of-this-document">Purpose of this document</a></li>
 <li class="toctree-l2"><a class="reference internal" href="MFRC522.html#card-detection">Card detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="MFRC522.html#card-presence">Card presence</a></li>
@@ -217,11 +210,21 @@
 <li class="toctree-l1"><a class="reference internal" href="Assembly.html">Assembly</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="Assembly.html#soldering">Soldering</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Assembly.html#enclosure">Enclosure</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Assembly.html#drill-template">Drill template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Assembly.html#drillhole-marking-templates">Drillhole marking templates</a></li>
 <li class="toctree-l3"><a class="reference internal" href="Assembly.html#faceplate-alignment-template">Faceplate + alignment template</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Assembly.html#cable-gland-template">Cable Gland template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Assembly.html#cable-gland-marking-template">Cable Gland Marking template</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="futureDevelopment.html">Roadmap to Further Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="futureDevelopment.html#proposed-future-mqtt-topic-structure">Proposed Future MQTT Topic Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="futureDevelopment.html#whoami-implementation-for-mqtt-topic-expansion">Whoami implementation for MQTT Topic Expansion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="futureDevelopment.html#interrupt-functionality-of-the-mfrc522-module">Interrupt functionality of the MFRC522 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="futureDevelopment.html#optimizing-rtos-task-stack-size">Optimizing RTOS Task Stack Size</a></li>
+<li class="toctree-l2"><a class="reference internal" href="futureDevelopment.html#shrinking-program-size-for-ota">Shrinking program size for OTA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="futureDevelopment.html#implementation-of-onboard-logging">Implementation of onboard logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="futureDevelopment.html#desired-future-features">Desired Future Features</a></li>
 </ul>
 </li>
 </ul>
